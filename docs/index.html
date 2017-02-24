@@ -1,17 +1,60 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Pieszyński Blog - pieszynski.com</title>
 
     <link href="/favicon.png" rel="shortcut icon" />
     <link href="/favicon.png" rel="icon" />
 
     <!--<link href="/feed.rss" rel="alternate" type="application/rss+xml" title="pieszynski.com - co nowego?" />-->
+    <meta name="theme-color" content="#157878" />
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700" rel="stylesheet" />
+    <link href="css/cayman.css" rel="stylesheet" />
+    <link href="css/highlight.min.css" rel="stylesheet" />
 </head>
 <body>
-    <div>Strona główna @DOCS</div>
+    <section class="page-header">
+        <h1 class="project-name">Strona główna @DOCS</h1>
+        <h2 class="project-tagline">Cayman is a clean, responsive theme for GitHub Pages.</h2>
+
+        <!--<a href="https://github.com/pages-themes/cayman" class="btn">View on GitHub</a>-->   
+
+    </section>
+    <section class="main-content">
+
+        <h1>Nagłowek 1</h1>
+        <p>Text can be <strong>bold</strong>, <em>italic</em>, or <del>strikethrough</del>.</p>
+        <p><a href="https://pages-themes.github.io/cayman/" target="_blank">Cayman</a>.</p>
+        <p>There should be whitespace between paragraphs.</p>
+
+        <div>
+            <pre><code class="cs"><span class="hljs-keyword">using</span> System.Text;
+<span class="hljs-keyword">using</span> System.Threading.Tasks;
+
+<span class="hljs-keyword">namespace</span> <span class="hljs-title">AutoTestGenerator.Analysers</span>
+{
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">CSharpDocumentAnalyser</span> : <span class="hljs-title">IDocumentAnalyser</span>
+    {
+        <span class="hljs-keyword">protected</span> SemanticModel Model;
+        <span class="hljs-keyword">protected</span> SyntaxTree Tree;
+        <span class="hljs-keyword">protected</span> CompilationUnitSyntax Root;
+
+        <span class="hljs-function"><span class="hljs-keyword">internal</span> <span class="hljs-title">CSharpDocumentAnalyser</span>(<span class="hljs-params">SemanticModel model, SyntaxTree tree, CompilationUnitSyntax root</span>)
+        </span>{
+            <span class="hljs-keyword">this</span>.Model = model;
+            <span class="hljs-keyword">this</span>.Tree = tree;
+            <span class="hljs-keyword">this</span>.Root = root;
+
+            <span class="hljs-comment">// http://stackoverflow.com/questions/38204509/roslyn-throws-the-language-c-is-not-supported</span>
+            <span class="hljs-comment">// Project needs to reference Microsoft.CodeAnalysis.CSharp.Workspaces</span>
+            <span class="hljs-keyword">var</span> _ = <span class="hljs-keyword">typeof</span>(Microsoft.CodeAnalysis.CSharp.Formatting.CSharpFormattingOptions);
+        }
+    }
+}</code></pre>
+        </div>
+    </section>
 </body>
 </html>
