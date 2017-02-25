@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pieszyński Blog - pieszynski.com</title>
+
+    <link href="/favicon.png" rel="shortcut icon" />
+    <link href="/favicon.png" rel="icon" />
+
+    <!--<link href="/feed.rss" rel="alternate" type="application/rss+xml" title="pieszynski.com - co nowego?" />-->
+    <meta name="theme-color" content="#157878" />
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700" rel="stylesheet" />
+    <link href="/css/cayman.css" rel="stylesheet" />
+    <link href="/css/highlight.min.css" rel="stylesheet" />
+    <link href="/css/style.css" rel="stylesheet" />
+</head>
+<body>
+    <section class="page-header">
+        <h1 class="project-name">GIT poradnik</h1>
+        <h2 class="project-tagline">Szybki start z GIT. Podstawowe komendy i konfiguracja.</h2>
+
+        <!--<a href="https://github.com/pages-themes/cayman" class="btn">View on GitHub</a>-->   
+
+    </section>
+    <section class="main-content">
+        
+<div>
+    <h1>GIT poradnik<top-date>22.XI.2014</top-date></h1>
+
+    <h3>Instalacja</h3>
+    <p>
+        Tu w zasadzie nie ma co wyjaśniać. Wystarczy znaleźć w ulubionej wyszukiwarce stronę z instalajcą GITa i zainstlować. Aktualnie instalacja znajduje się pod adresem <a nhref="http://git-scm.com/downloads">http://git-scm.com/downloads</a>.
+    </p>
+
+    <h3>Wstępna konfiguracja</h3>
+    <p>
+        GITa można wstępnie skonfigurować tak, aby podczas każdej publikacji przesyłał prawidłowe informacje o autorze zmian. Co więcej można zdefiniować aliasy, które znacznie przyspieszą wykonywanie częstych operacji w GITcie.
+    </p>
+    <code class="preserve">&gt; git config --global user.name "John Doe"
+        &gt; git config --global user.email johndoe@example.com
+        &gt; git config --global alias.co checkout
+        &gt; git config --global alias.st status
+    </code>
+
+    <h3>Ułatwienie na zakończenie</h3>
+    <p>
+        Zanim umieszczę listę najbardziej przydatnych dla mnie poleceń należy zwrócić uwagę na pewien problem, który jest dość irytujący przy pracy z jakimkolwiek repozytorium zdalnym np. GitHubem. Scenariusz jest prosty i pewnie często spotykany. Czyli mamy założone co najmniej dwa repozytoria na GitHubie i dla każdego z nich mamy włączoną publikację za pomocą klucza SSH.
+    </p>
+    <p>
+        Problem polega jednak na tym, że GitHub pozwala na dodanie tego samego klucza publikacji tylko do jednego repozytorium. Jak uporać się zatem z tym problem w sytuacji gdy klucz SSH jest zapamiętywany per nazwa hosta? Odpowiedź poniżej.
+    </p>
+    <ol>
+        <li>
+            Przygotowujemy klucz publikacji (deploy key) za pomocą polecenia
+            <code class="preserve">
+                &gt; ssh-keygen
+            </code>
+            domyślnie będą to pliki "id_rsa" i "id_rsa.pub" (odpowiednio klucz prywatny i publiczny)
+        </li>
+        <li>
+            Zmieniamy nazwę wygenerowanych kluczy (prywatnego i publicznego), które znajdują się w katalogu ".ssh" profilu, tak aby zawierały nazwę repozytorium lub dowolnie inaczej jak chcemy aby łatwo było poznać do czego dana para kluczy służy
+            <ul>
+                <li>id_rsa.test</li>
+                <li>id_rsa.test.pub</li>
+            </ul>
+        </li>
+        <li>
+            Dodajemy do pliku konfiguracyjnego SSH (~/.ssh/config) konfigurację dla "nowego hosta"/"aliasu hosta" pod jakim będzie następowała komunikacja z repozytorium. U mnie wygląda to tak:
+            <code class="preserve">
+                # account for the test repo
+                Host github.com-test
+                    HostName github.com
+                    User pieszynski
+                    IdentitiesOnly yes
+                    IdentityFile ~/.ssh/id_rsa.test
+            </code>
+        </li>
+        <li>
+            Teraz należy dodać swój klucz publiczny (zawartość pliku <code>id_rsa.pub</code> bez końcowej nazwy komputera) do repozytorium na github.com w sekcji "Deploy keys". Jeśli tego nie zrobimy to w konsoli pojawi się komunikat (przy klonowaniu przez SSH):
+            <code class="preserve">
+                Cloning into 'test'...
+                Permission denied (publickey).
+                fatal: Could not read from remote repository.
+                Please make sure you have the correct access rights
+                and the repository exists.
+            </code>
+        </li>
+        <li>
+            Klonujemy repozytorim za pomocą SSH a nie HTTPS (choć GitHub domyślnie podaje adres HTTPS)! Oraz nazwa hosta, podawana przez GitHub musi być zmieniona na taką jaka została wpisana w konfiguracji "Host".
+            <code class="preserve">
+                &gt; git clone git@github.com-test:pieszynski/test.git
+            </code>
+        </li>
+        <li>
+            Jeśli już repozytorium posiada źle ustawiony "remote" można to skorygować za pomocą:
+            <code class="preserve">
+                &gt; git remote -v
+                # kopiujemy sobie adres aby go zmienić
+                &gt; git remote rm origin
+                &gt; git remote add origin nowy_remote
+                &gt; git remote -v
+            </code>
+        </li>
+    </ol>
+
+    <h3>Najczęsciej używane / często zapominane</h3>
+    <code class="preserve"># róznego rodzaju konfiguracje .gitignore
+        https://github.com/github/gitignore
+
+        # odtworzenie repozytorium lokalnie
+        git clone git://github.com/schacon/grit.git
+
+        # dodanie do poprzedniego commit zapomnianych zmian (zeby wsztstko było w jednym COMMIT a nie kilku)
+        git commit --amend
+
+        # publikacja zmian na serwer zdalny
+        git push origin master
+
+        # otagowanie
+        git tag -a "v1.0" -m"cookie version 1.0"
+
+        # przesłanie taga na serwer zewnętrzny (automatycznie tagi się nie przenoszą)
+        git push origin "v1.0"
+
+        # przełączenie na inny BRANCH
+        git checkout nazwa_branch
+
+        # stworzenie nowego czystego BRANCH z aktualnego
+        git checkout -b nowa_nazwa
+
+        # zintegrowanie do AKTUALNEGO branch ten, który został podany jako parametr
+        git merge nazwa_branch
+
+        # usunięcie istniejącej gałęzi
+        git branch -d nazwa_branch
+
+        # przeniesienie pliku i dodanie tej operacji do STAGE
+        git mv
+
+        # usunięcie pliku z repozytorium i dodanie tej operacji do STAGE
+        git rm
+
+        # ustawienie statusu do skasowania jak jest już w STAGE
+        git rm --cached
+
+        # przywrócenie wszystkich plików zakwalifikowanych do STAGE
+        git reset .
+
+        # przywrócenie wszystkich plików do takich z ostatniego z COMMIT
+        git checkout .
+
+        # odtworzenie pliku z innego brancha
+        git checkout source_branch <paths>
+
+        # wylistowanie zmian
+        git diff
+
+        # wylistowanie zmian do wprowadzenia z STAGE do COMMIT
+        git diff --cached
+
+        # wylistowanie historii COMMITów z wprowadzonymi zmianami
+        git log -p
+
+        # wylistowanie historii dwóch COMMITów z wprowadzonymi zmianami
+        git log -p -2
+
+        # wylistowanie statystyk zmian w COMMITach
+        git log --stat
+
+        # wylistowanie graf COMMITów i BRANCHy
+        git log --graph
+
+        # aktualizacja repozytorium będącego FORKiem oryginalnego
+        git remote add upstream https://github.com/ORIGINAL_OWNER/ORIGINAL_REPOSITORY.git
+        git fetch upstream
+        git checkout master
+        git merge upstream/master
+        git push origin master
+    </code>
+
+    <h3>Referencje</h3>
+    <ul class="no-bullet nopad">
+        <li>[1] - Instrukcja uproszczenia publikacji na podstawie <a nhref="http://www.freshblurbs.com/blog/2013/06/22/github-multiple-ssh-keys.html">http://www.freshblurbs.com/blog/2013/06/22/github-multiple-ssh-keys.html</a></li>
+    </ul>
+</div>
+
+    </section>
+</body>
+</html>

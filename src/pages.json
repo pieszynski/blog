@@ -1,0 +1,18 @@
+{
+    "title": "Pieszyński Blog - pieszynski.com",
+    "name": "Strona główna @DOCS",
+    "description": "Rzeczy, które szybko się zapomina a potem człowiek wynajduje koło na nowo...",
+    "output": "../docs",
+    "static": "static",
+    "layout": "static/layout.html",
+    "pagesRoute" : "temat",
+    "pagesPath" : "topic",
+    "pages" : [
+        {
+            "name" : "git-poradnik",
+            "title" : "GIT poradnik",
+            "description" : "Szybki start z GIT. Podstawowe komendy i konfiguracja.",
+            "date" : "2014-11-22"
+        }
+    ]
+}
