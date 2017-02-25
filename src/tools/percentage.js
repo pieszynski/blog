@@ -7,6 +7,14 @@
 
     function search(text) {
 
+        // text: 'ala %%%#body_#%%% kota w %%%#siersc_kropki#%%%'
+        //
+        // @result: 
+        //  [ { b: 25, e: 45, t: 'siersc', bin: 36, ein: 41 },
+        //    { b: 17, e: 24, t: 'text', bin: 17, ein: 24 },
+        //    { b: 4, e: 16, t: 'body', bin: 13, ein: 13 },
+        //    { b: 0, e: 3, t: 'text', bin: 0, ein: 3 } ]
+
         var response = [];
         var pos = 0;
         var len = text.length;
@@ -55,5 +63,59 @@
         return response;
     }
 
-    module.exports = search;
+    function compile(text, layout) {
+
+        // text: 'ala %%%#body_#%%% kota w %%%#siersc_kropki#%%%'
+        // layout:
+        //  [ { b: 25, e: 45, t: 'siersc', bin: 36, ein: 41 },
+        //    { b: 17, e: 24, t: 'text', bin: 17, ein: 24 },
+        //    { b: 4, e: 16, t: 'body', bin: 13, ein: 13 },
+        //    { b: 0, e: 3, t: 'text', bin: 0, ein: 3 } ]
+        //
+        // @result: (replacements) => {...}
+
+        if (!layout)
+            layout = search(text);
+
+        var data = [];
+
+        for (var i = 0; i < layout.length; i++) {
+            var elem = layout[i];
+            if (elem.b < elem.e) {
+                data.unshift({ 
+                    k: elem.t, 
+                    v: (elem.bin < elem.ein ? text.substring(elem.bin, elem.ein+1) : '')
+                });
+            }
+        }
+
+        return function __replace(replacements) {
+
+            // replacements { body: 'ma', siersc: (k,v) => v + ' i kreski' }
+            //
+            // @result:
+            //  ala ma kota w kropki i kreski
+
+            var response = data.map(function __data_map(elem) {
+
+                if ('text' === elem.k) {
+                    return elem.v;
+                } else {
+                    var repl = replacements[elem.k];
+                    if ('function' === typeof(repl)) {
+                        return repl(elem.k, elem.v);
+                    } else {
+                        return repl;
+                    }
+                }
+            }).join('');
+
+            return response;
+        };
+    }
+
+    module.exports = {
+        search: search,
+        compile: compile
+    };
 })();
