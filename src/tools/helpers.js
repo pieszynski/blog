@@ -17,7 +17,10 @@ var pg = require('./percentage.js');
     }
 
     var StandardTopicReplacements = {
-
+        code: function(k,v) {
+            var result = hljs.highlightAuto(v.trim());
+            return '<pre><code class="hljs ' + result.language + '">' + result.value + '</code></pre>';
+        }
     }
 
     // szablony dokumentów
