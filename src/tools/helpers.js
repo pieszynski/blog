@@ -5,6 +5,8 @@ var fs = require('fs'),
 var hljs = require('./highlight.min.js');
 var pg = require('./percentage.js');
 
+// HLJS Langs (hljs.listLanguages()): 'apache','bash','coffeescript','cpp','cs','css','diff','http','ini','java','javascript','json','makefile','xml','markdown','nginx','objectivec','perl','php','python','ruby','sql'
+
 (function(fs, path, process, pg, hljs, undefined) {
     "use strict"; 
 
@@ -20,6 +22,14 @@ var pg = require('./percentage.js');
         code: function(k,v) {
             var result = hljs.highlightAuto(v.trim());
             return '<pre><code class="hljs ' + result.language + '">' + result.value + '</code></pre>';
+        },
+        code_cs: function(k,v) {
+            var result = hljs.highlight('cs', v.trim());
+            return '<pre><code class="hljs cs">' + result.value + '</code></pre>';
+        },
+        code_bash: function(k,v) {
+            var result = hljs.highlight('bash', v.trim());
+            return '<pre><code class="hljs bash">' + result.value + '</code></pre>';
         }
     }
 

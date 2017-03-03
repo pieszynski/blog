@@ -1,7 +1,75 @@
+/*
+    Instrukcja użycia
+    =================
+
+    Biblioteka wyszukuje w ciągu znaków wszystkiego co znajduje się
+    pomiędzy sekwencją początkową %%%# i końcową #%%% (trzy procenty i płotek
+    z przodu lub z tyłu).
+
+    Dodatkowo jeśli bez spacji w środku znajduje się tekst zaraz po
+    znaku rozpoczynającym %%%# i zakończony znakiem daszka ('^')
+    to będzie on określał typ treści np. "%%%#javascript_ var ... #%%%"
+    typ treści to "javascript".
+
+    .compile(text)
+    ======================
+    Metoda analizuje tekst (zmienna 'text'), dzieli go na sekcje
+    a następnie zwraca metodę, do której będzie można przekazać obiekt
+    podmian w tekście. Kompilacja następuje raz a metodę wynikową "replace"
+    można wywoływać wielokrotnie z różnymi kluczami podmiany. Jeśli klucz
+    podmiany nie zostanie przekazany to zawartość sekcji innego typu niż
+    'text' ({t: 'text'}) nie zostanie zwrócona.
+
+    Jako parametry do zwróconej funkcji "replace" należy podać obiekt,
+    którego nazwy pól będą odpowiadały typom znalezionym w tekście.
+    Można to zrobić na dwa sposoby:
+
+        1) podająć statyczną wartość podmiany "{imie: 'Krzyś'}"
+        2) metodę podmieniającą "{imie: (type, content) => {...} }"
+            gdzie "type" to typ treści zawartego wewnątrz sekcji
+            a "content" to zawartość sekcji. Wynik wywołania metody
+            zostanie wstawiony jako podmieniona treść.
+
+        parametry
+        =========
+
+        text: 'ala %%%#body_#%%% kota w %%%#siersc_kropki#%%%'
+
+        @result: (replacements) => {...}
+
+            parametry @result
+            =================
+
+            replacements { body: 'ma', siersc: (k,v) => v + ' i kreski' }
+            
+            @result:
+             ala ma kota w kropki i kreski
+
+    .search(text)
+    =============
+    Metoda dzieli ciąg znaków na sekcje normalnego tekstu oraz takiego,
+    który znajduje się wewnątrz sekwencji %%%# i #%%%%. Wynikiem jest 
+    tablica zawierająca listę podziałów w odwrotnej kolejności - od 
+    ostatniego wystąpienia do pierwszego.
+
+        parametry
+        =========
+
+        text: 'ala %%%#body_#%%% kota w %%%#siersc_kropki#%%%'
+        
+        @result: 
+         [ { b: 25, e: 45, t: 'siersc', bin: 36, ein: 41 },
+           { b: 17, e: 24, t: 'text', bin: 17, ein: 24 },
+           { b: 4, e: 16, t: 'body', bin: 13, ein: 13 },
+           { b: 0, e: 3, t: 'text', bin: 0, ein: 3 } ]
+    
+*/
+
 (function() {
     "use strict"
     var BEGIN='%%%#';
     var END='#%%%'
+    var TYPE_CHAR='^'
     var BEGIN_LENGTH=BEGIN.length;
     var END_LENGTH=END.length;
 
@@ -44,7 +112,7 @@
                     type = 'template'
                     idx_begin_mod = 0;
                     // poszukiwanie pierwszego podkreślnika od BEGIN - określnik typu
-                    idx = text.indexOf('_', idx_begin+BEGIN_LENGTH);
+                    idx = text.indexOf(TYPE_CHAR, idx_begin+BEGIN_LENGTH);
                     if (idx < idx_end) {
                         temp = text.substring(idx_begin+BEGIN_LENGTH, idx);
                         if (-1 === temp.indexOf(' ')) {
@@ -63,7 +131,7 @@
         return response;
     }
 
-    function compile(text, layout) {
+    function compile(text) {
 
         // text: 'ala %%%#body_#%%% kota w %%%#siersc_kropki#%%%'
         // layout:
@@ -74,8 +142,7 @@
         //
         // @result: (replacements) => {...}
 
-        if (!layout)
-            layout = search(text);
+        var layout = search(text);
 
         var data = [];
 

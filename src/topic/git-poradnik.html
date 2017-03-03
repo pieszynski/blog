@@ -12,7 +12,7 @@
         GITa można wstępnie skonfigurować tak, aby podczas każdej publikacji przesyłał prawidłowe informacje o autorze zmian. Co więcej można zdefiniować aliasy, które znacznie przyspieszą wykonywanie częstych operacji w GITcie.
     </p>
 
-    %%%#code_
+    %%%#code_bash^
 \> git config --global user.name "John Doe"
 \> git config --global user.email johndoe@example.com
 \> git config --global alias.co checkout
@@ -29,7 +29,7 @@
     <ol>
         <li>
             Przygotowujemy klucz publikacji (deploy key) za pomocą polecenia
-%%%#code_
+%%%#code_bash^
 \> ssh-keygen
 #%%%
             domyślnie będą to pliki "id_rsa" i "id_rsa.pub" (odpowiednio klucz prywatny i publiczny)
@@ -43,7 +43,7 @@
         </li>
         <li>
             Dodajemy do pliku konfiguracyjnego SSH (~/.ssh/config) konfigurację dla "nowego hosta"/"aliasu hosta" pod jakim będzie następowała komunikacja z repozytorium. U mnie wygląda to tak:
-%%%#code_
+%%%#code_bash^
 # account for the test repo
 Host github.com-test
     HostName github.com
@@ -54,7 +54,7 @@ Host github.com-test
         </li>
         <li>
             Teraz należy dodać swój klucz publiczny (zawartość pliku <code>id_rsa.pub</code> bez końcowej nazwy komputera) do repozytorium na github.com w sekcji "Deploy keys". Jeśli tego nie zrobimy to w konsoli pojawi się komunikat (przy klonowaniu przez SSH):
-%%%#code_
+%%%#code_bash^
 Cloning into 'test'...
 Permission denied (publickey).
 fatal: Could not read from remote repository.
@@ -64,13 +64,13 @@ and the repository exists.
         </li>
         <li>
             Klonujemy repozytorim za pomocą SSH a nie HTTPS (choć GitHub domyślnie podaje adres HTTPS)! Oraz nazwa hosta, podawana przez GitHub musi być zmieniona na taką jaka została wpisana w konfiguracji "Host".
-%%%#code_
+%%%#code_bash^
 \> git clone git@github.com-test:pieszynski/test.git
 #%%%
         </li>
         <li>
             Jeśli już repozytorium posiada źle ustawiony "remote" można to skorygować za pomocą:
-%%%#code_
+%%%#code_bash^
 \> git remote -v
 # kopiujemy sobie adres aby go zmienić
 \> git remote rm origin
@@ -81,7 +81,7 @@ and the repository exists.
     </ol>
 
     <h3>Najczęsciej używane / często zapominane</h3>
-%%%#code_
+%%%#code_bash^
 # róznego rodzaju konfiguracje .gitignore
 https://github.com/github/gitignore
 

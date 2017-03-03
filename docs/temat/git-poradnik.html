@@ -39,10 +39,10 @@
         GITa można wstępnie skonfigurować tak, aby podczas każdej publikacji przesyłał prawidłowe informacje o autorze zmian. Co więcej można zdefiniować aliasy, które znacznie przyspieszą wykonywanie częstych operacji w GITcie.
     </p>
 
-    <pre><code class="hljs cs">\&gt; git config --<span class="hljs-keyword">global</span> user.name <span class="hljs-string">"John Doe"</span>
-\&gt; git config --<span class="hljs-keyword">global</span> user.email johndoe@example.com
-\&gt; git config --<span class="hljs-keyword">global</span> <span class="hljs-keyword">alias</span>.co checkout
-\&gt; git config --<span class="hljs-keyword">global</span> <span class="hljs-keyword">alias</span>.st status</code></pre>
+    <pre><code class="hljs bash">\&gt; git config --global user.name <span class="hljs-string">"John Doe"</span>
+\&gt; git config --global user.email johndoe@example.com
+\&gt; git config --global alias.co checkout
+\&gt; git config --global alias.st status</code></pre>
 
     <h3>Ułatwienie na zakończenie</h3>
     <p>
@@ -54,7 +54,7 @@
     <ol>
         <li>
             Przygotowujemy klucz publikacji (deploy key) za pomocą polecenia
-<pre><code class="hljs undefined">\&gt; ssh-keygen</code></pre>
+<pre><code class="hljs bash">\&gt; ssh-keygen</code></pre>
             domyślnie będą to pliki "id_rsa" i "id_rsa.pub" (odpowiednio klucz prywatny i publiczny)
         </li>
         <li>
@@ -66,20 +66,20 @@
         </li>
         <li>
             Dodajemy do pliku konfiguracyjnego SSH (~/.ssh/config) konfigurację dla "nowego hosta"/"aliasu hosta" pod jakim będzie następowała komunikacja z repozytorium. U mnie wygląda to tak:
-<pre><code class="hljs nginx"><span class="hljs-comment"># account for the test repo</span>
-<span class="hljs-attribute">Host</span> github.com-test
+<pre><code class="hljs bash"><span class="hljs-comment"># account for the test repo</span>
+Host github.com-test
     HostName github.com
     User pieszynski
-    IdentitiesOnly <span class="hljs-literal">yes</span>
+    IdentitiesOnly yes
     IdentityFile ~/.ssh/id_rsa.test</code></pre>
         </li>
         <li>
             Teraz należy dodać swój klucz publiczny (zawartość pliku <code>id_rsa.pub</code> bez końcowej nazwy komputera) do repozytorium na github.com w sekcji "Deploy keys". Jeśli tego nie zrobimy to w konsoli pojawi się komunikat (przy klonowaniu przez SSH):
-<pre><code class="hljs coffeescript">Cloning into <span class="hljs-string">'test'</span>...
+<pre><code class="hljs bash">Cloning into <span class="hljs-string">'test'</span>...
 Permission denied (publickey).
-fatal: Could <span class="hljs-keyword">not</span> read <span class="hljs-keyword">from</span> remote repository.
+fatal: Could not <span class="hljs-built_in">read</span> from remote repository.
 Please make sure you have the correct access rights
-<span class="hljs-keyword">and</span> the repository exists.</code></pre>
+and the repository exists.</code></pre>
         </li>
         <li>
             Klonujemy repozytorim za pomocą SSH a nie HTTPS (choć GitHub domyślnie podaje adres HTTPS)! Oraz nazwa hosta, podawana przez GitHub musi być zmieniona na taką jaka została wpisana w konfiguracji "Host".
@@ -87,33 +87,33 @@ Please make sure you have the correct access rights
         </li>
         <li>
             Jeśli już repozytorium posiada źle ustawiony "remote" można to skorygować za pomocą:
-<pre><code class="hljs cs">\&gt; git remote -v
-<span class="hljs-meta"># kopiujemy sobie adres aby go zmienić</span>
+<pre><code class="hljs bash">\&gt; git remote -v
+<span class="hljs-comment"># kopiujemy sobie adres aby go zmienić</span>
 \&gt; git remote rm origin
-\&gt; git remote <span class="hljs-keyword">add</span> origin nowy_remote
+\&gt; git remote add origin nowy_remote
 \&gt; git remote -v</code></pre>
         </li>
     </ol>
 
     <h3>Najczęsciej używane / często zapominane</h3>
-<pre><code class="hljs perl"><span class="hljs-comment"># róznego rodzaju konfiguracje .gitignore</span>
-https:<span class="hljs-regexp">//github</span>.com/github/gitignore
+<pre><code class="hljs bash"><span class="hljs-comment"># róznego rodzaju konfiguracje .gitignore</span>
+https://github.com/github/gitignore
 
 <span class="hljs-comment"># odtworzenie repozytorium lokalnie</span>
-git clone git:<span class="hljs-regexp">//github</span>.com/schacon/grit.git
+git <span class="hljs-built_in">clone</span> git://github.com/schacon/grit.git
 
 <span class="hljs-comment"># dodanie do poprzedniego commit zapomnianych zmian </span>
 <span class="hljs-comment">#   (żeby wsztstko było w jednym COMMIT a nie kilku)</span>
 git commit --amend
 
 <span class="hljs-comment"># publikacja zmian na serwer zdalny</span>
-git <span class="hljs-keyword">push</span> origin master
+git push origin master
 
 <span class="hljs-comment"># otagowanie</span>
-git tag -a <span class="hljs-string">"v1.0"</span> -<span class="hljs-keyword">m</span><span class="hljs-string">"cookie version 1.0"</span>
+git tag <span class="hljs-_">-a</span> <span class="hljs-string">"v1.0"</span> -m<span class="hljs-string">"cookie version 1.0"</span>
 
 <span class="hljs-comment"># przesłanie taga na serwer zewnętrzny (automatycznie tagi się nie przenoszą)</span>
-git <span class="hljs-keyword">push</span> origin <span class="hljs-string">"v1.0"</span>
+git push origin <span class="hljs-string">"v1.0"</span>
 
 <span class="hljs-comment"># przełączenie na inny BRANCH</span>
 git checkout nazwa_branch
@@ -125,7 +125,7 @@ git checkout -b nowa_nazwa
 git merge nazwa_branch
 
 <span class="hljs-comment"># usunięcie istniejącej gałęzi</span>
-git branch -d nazwa_branch
+git branch <span class="hljs-_">-d</span> nazwa_branch
 
 <span class="hljs-comment"># przeniesienie pliku i dodanie tej operacji do STAGE</span>
 git mv
@@ -137,7 +137,7 @@ git rm
 git rm --cached
 
 <span class="hljs-comment"># przywrócenie wszystkich plików zakwalifikowanych do STAGE</span>
-git <span class="hljs-keyword">reset</span> .
+git reset .
 
 <span class="hljs-comment"># przywrócenie wszystkich plików do takich z ostatniego z COMMIT</span>
 git checkout .
@@ -152,23 +152,23 @@ git diff
 git diff --cached
 
 <span class="hljs-comment"># wylistowanie historii COMMITów z wprowadzonymi zmianami</span>
-git <span class="hljs-keyword">log</span> -p
+git <span class="hljs-built_in">log</span> -p
 
 <span class="hljs-comment"># wylistowanie historii dwóch COMMITów z wprowadzonymi zmianami</span>
-git <span class="hljs-keyword">log</span> -p -<span class="hljs-number">2</span>
+git <span class="hljs-built_in">log</span> -p -2
 
 <span class="hljs-comment"># wylistowanie statystyk zmian w COMMITach</span>
-git <span class="hljs-keyword">log</span> --<span class="hljs-keyword">stat</span>
+git <span class="hljs-built_in">log</span> --stat
 
 <span class="hljs-comment"># wylistowanie graf COMMITów i BRANCHy</span>
-git <span class="hljs-keyword">log</span> --graph
+git <span class="hljs-built_in">log</span> --graph
 
 <span class="hljs-comment"># aktualizacja repozytorium będącego FORKiem oryginalnego</span>
-git remote add upstream https:<span class="hljs-regexp">//github</span>.com/ORIGINAL_OWNER/ORIGINAL_REPOSITORY.git
+git remote add upstream https://github.com/ORIGINAL_OWNER/ORIGINAL_REPOSITORY.git
 git fetch upstream
 git checkout master
 git merge upstream/master
-git <span class="hljs-keyword">push</span> origin master</code></pre>
+git push origin master</code></pre>
 
     <h3>Referencje</h3>
     <ul class="no-bullet nopad">
