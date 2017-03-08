@@ -13,6 +13,8 @@ var pg = require('./percentage.js');
     __dirname = process.cwd();
 
     var StandardTemplateReplacements = {
+        title: '',
+        gohome: true,
         name: '',
         tagline: '',
         body: ''
@@ -54,10 +56,15 @@ var pg = require('./percentage.js');
 
     function renderTopics(template, pages) {
         mkDir(path.normalize(path.join(pages.output, pages.pagesRoute)));
+
+        StandardTemplateReplacements.title = pages.title;
+        StandardTemplateReplacements.gohome = true;
+
         pages.pages.forEach(function(elem) {
             var srcRelPage = path.normalize(path.join(pages.pagesPath, elem.name + '.html'));
             var dstTopic = path.normalize(path.join(pages.output, pages.pagesRoute, elem.name + '.html'));
             var elemTemplate = getTemplate(srcRelPage);
+
             StandardTemplateReplacements.body = elemTemplate(StandardTopicReplacements);
             StandardTemplateReplacements.name = elem.title;
             StandardTemplateReplacements.tagline = elem.description;
@@ -74,11 +81,14 @@ var pg = require('./percentage.js');
         var dst = path.normalize(path.join(pages.output, 'index.html'));
 
         var body = pages.pages.map(function(elem) {
-            return '<h1>' + elem.title + '</h1>'
-                + '<p>' + elem.description + '</p>'
-                + '<p><a href="' + pages.pagesRoute + '/' + elem.name + '">link</a></p>'
+            return '<a href="' + pages.pagesRoute + '/' + elem.name + '" class="topic-link">'
+                + '<div><h1>' + elem.title + '</h1>'
+                + '<p>' + elem.description + '</p></div>'
+                + '</a>'
         }).join('\r\n');
 
+        StandardTemplateReplacements.title = pages.title;
+        StandardTemplateReplacements.gohome = false;
         StandardTemplateReplacements.name = pages.name;
         StandardTemplateReplacements.tagline = pages.description;
         StandardTemplateReplacements.body = body;

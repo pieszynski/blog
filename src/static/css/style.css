@@ -1,4 +1,36 @@
 
+.page-header .project-home {
+    font-size: 1.15rem;
+    position: relative;
+    text-align: left;
+} 
+@media screen and (max-width: 42em) { .page-header .project-home { margin-bottom: 2rem; } }
+.page-header .project-home a {
+    color: rgba(255,255,255,0.7);
+    position: absolute;
+    text-decoration: none;
+    top: -2rem;
+}
+.page-header .project-home a:hover {
+    color: rgba(255,255,255,1);
+}
+@media screen and (min-width: 64em) { .page-header .project-home a { top: -4rem; left: -5rem; } }
+@media screen and (min-width: 42em) and (max-width: 64em) { .page-header .project-home a { top: -2rem; } }
+@media screen and (max-width: 42em) { .page-header .project-home a { position: initial; top: 0; } }
+
+a.topic-link {
+    color: #606c71;
+    text-decoration: none;
+}
+a.topic-link div {
+    border-left-width: 0;
+}
+a:hover.topic-link div {
+    border-left: 0.4rem solid rgba(96,108,113,0.7);
+    padding-left: 1rem;
+    transition: border-left-color 0.2s, border-left-width 0.2s;
+}
+
 .preserve {
     white-space: pre-line;
     word-wrap: break-word;

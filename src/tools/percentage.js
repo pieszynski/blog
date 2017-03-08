@@ -22,10 +22,12 @@
 
     Jako parametry do zwróconej funkcji "replace" należy podać obiekt,
     którego nazwy pól będą odpowiadały typom znalezionym w tekście.
-    Można to zrobić na dwa sposoby:
+    Można to zrobić w sposób:
 
         1) podająć statyczną wartość podmiany "{imie: 'Krzyś'}"
-        2) metodę podmieniającą "{imie: (type, content) => {...} }"
+        2) wartość logiczną TRUE wtedy wnętrze sekcji zostanie
+            wstawione w całości "{naglowek: true}"
+        3) metodę podmieniającą "{imie: (type, content) => {...} }"
             gdzie "type" to typ treści zawartego wewnątrz sekcji
             a "content" to zawartość sekcji. Wynik wywołania metody
             zostanie wstawiony jako podmieniona treść.
@@ -171,6 +173,8 @@
                     var repl = replacements[elem.k];
                     if ('function' === typeof(repl)) {
                         return repl(elem.k, elem.v);
+                    } else if ('boolean' === typeof(repl)) {
+                        return repl ? elem.v : '';
                     } else {
                         return repl;
                     }
