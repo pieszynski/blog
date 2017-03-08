@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pieszyński Blog - pieszynski.com</title>
+
+    <link href="/favicon.png" rel="shortcut icon" />
+    <link href="/favicon.png" rel="icon" />
+
+    <!--<link href="/feed.rss" rel="alternate" type="application/rss+xml" title="pieszynski.com - co nowego?" />-->
+    <meta name="theme-color" content="#157878" />
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700" rel="stylesheet" />
+    <link href="/css/cayman.css" rel="stylesheet" />
+    <link href="/css/highlight.min.css" rel="stylesheet" />
+    <link href="/css/style.css" rel="stylesheet" />
+</head>
+<body>
+    <section class="page-header">
+        <div class="project-home"><a href="/">= Strona główna</a></div>
+        <h1 class="project-name">TypeScript - szybki start</h1>
+        <h2 class="project-tagline">TypeScript - instajacja, pierwsze kroki, itp. Generalnie starter.</h2>
+
+        <!--<a href="https://github.com/pages-themes/cayman" class="btn">View on GitHub</a>-->   
+
+    </section>
+    <section class="main-content">
+        
+<div>
+    <h1>TypeScript - szybki start <small>05.XI.2014</small></h1>
+
+
+    <h3>Dlaczego TypeScript?</h3>
+    <p>
+        Siłą JavaScriptu polega na tym, że jest on dynamiczny i niczym nie ograniczony. Można za pomocą jednej linii zrealizować funkjonalności, których realizacja w C# byłaby dość uciążliwa.
+    </p>
+    <p>
+        Mowa tu nie tylko o wbudowanych metodach takich jak <code>setTimeout</code> czy <code>setInterval</code> dla których w C# należałoby stworzyć oddzielny wątek, <code>Timer</code> lub <code>Task</code>. Ale również o dosyć swobodnym podejściu do istnienia metod ich przepinania oraz (niestety w dużej mierze problematycznego) wskaźnika <code>this</code> i co najważniejsze dość liberalnym podejściu do parametrów przekazywanych do metod.
+    </p>
+    <p>
+        Niestety wraz z niezwykłą elastycznością języka pojawiają się problemy, które nie są spotykane w językach silnie typowanych, np C#. Gdzie przekazywane obiekty mają (w 99,9% przypadków - przypadek <code>dynamic</code>) jasno określony typ.
+    </p>
+    <p>
+        Dlatego jeśli nie mamy dobrego środowiska, które podpowiada nam typy obiektów przekazywanych do metod w JavaScript, a dokładniej ich pól oraz metod, sprawa staje się dość uciążliwa.
+    </p>
+    <p>
+        Z pomocą przychodzi TypeScript, który jest jedynie delikatym rozszerzeniem dla kodu tworzonego w JavaScript. Dodatkowo nie narzuca kompletnej zmiany składni tak jak to ma miejsce w CoffeeScript a pozwala edytorom podpowiadającym składnię na trafne sugerowanie podpowiedzi podczas tworzenia kodu - w Visual Studio 2013 działa to wyśmienicie.
+    </p>
+    <p>
+        Poza tym nawet jeśli edytor nie osbługuje w pełni podpowiedzi z kompilatora TypeScript to przecież sam kompilator wyświetla błędy kompilacji i na ich podstawie można łatwo zdiagnozować problem.
+    </p>
+    <p>
+        To nie wszystko. Dostajemy również dziedziczenie klas, którego standardowo w JavaScript nie ma i trzeba troszkę się namęczyć i uważać na pomyłki lub literówki przy tworzeniu kodu niepotrzebnie generując szablonowe kawałki kodu. Tu TypeScipt błyszczy (przykłady poniżej - wersja kodu sprzed kompilacji jest dużo bardziej czytelna i nie zawiera zbędnych "śmieci", które zaciemniają zrozumienie kodu - co nie oznacza, że są niepotrzebne).
+    </p>
+
+
+    <h3>TypeScript vs jQuery</h3>
+    <p>
+        Faktem jest, że na rynku istnieje wiele bibliotek JavaScript, które nie zostały stworzone przy użyciu TypeScript i nie posiadają silnie typowanych definicji swoich obiektów. Przykładami są właśnie jQuery czy AngularJs.
+    </p>
+    <p>
+        Tu z pomocą przychodzi projekt [2] rozwijany na GitHub-ie będący swojego rodzaju repozytorium definicji typów dla bibliotek, które ich w świadomy sposób nie tworzą.
+    </p>
+
+
+    <h3>Modułowość</h3>
+    <p>
+        TypeScript w bardzo prosty sposób pozwala na tworzenie modułów, które łatwo jest potem użyć do innch celów. Poniższy przykład zobrazuje sytuację.
+    </p>
+    <pre><code class="hljs javascript"><span class="hljs-comment">// shapes.ts</span>
+
+<span class="hljs-built_in">module</span> Shapes {
+    <span class="hljs-keyword">export</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Polygon</span> </span>{
+        public x : number;
+        setX(_x : number) {
+            <span class="hljs-keyword">this</span>.x = _x;
+        }
+        public isSquare() {
+            <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>;
+        }
+    }
+}</code></pre>
+    <pre><code class="hljs javascript"><span class="hljs-comment">// main.ts</span>
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Square</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Shapes</span>.<span class="hljs-title">Polygon</span> </span>{
+    <span class="hljs-keyword">constructor</span>(dim : number) {
+        <span class="hljs-keyword">super</span>();
+        <span class="hljs-keyword">this</span>.setX(dim);
+    }
+    public isSquare() {
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>;
+    }
+}
+
+<span class="hljs-keyword">var</span> s : Shapes.Polygon = <span class="hljs-keyword">new</span> Square(<span class="hljs-number">40</span>);
+<span class="hljs-built_in">console</span>.log(s.x, s.isSquare());
+
+<span class="hljs-comment">// wynik: 40 true</span></code></pre>
+    <p>
+        Kompilacja i uruchomienie testowe:
+    </p>
+    <pre><code class="hljs bash">\&gt; tsc --out o.js shapes.ts main.ts &amp;&amp; node o.js
+40 <span class="hljs-literal">true</span></code></pre>
+    <p>
+        Ważne jest jednak aby nie zamienić kolejności plików kompilowanych przez TypeScript bo dostaniemy komunikat jak poniżej. Kompilator TypeScript dołącza do pliku wynikowego kompilowane pliki w kolejności jakiej zostały przekazane do polecenia.
+    </p>
+    <pre><code class="hljs bash">...\o.js:17
+})(Shapes.Polygon);
+         ^
+TypeError: Cannot <span class="hljs-built_in">read</span> property <span class="hljs-string">'Polygon'</span> of undefined</code></pre>
+    <p>
+        Jeśli jednak nie chcemy podawać na raz kilku plików możemy je referować do siebie wzajemnie umieszczając odpowiednią dyrektywę w komentarzu na początku pliku.
+    </p>
+    <pre><code class="hljs javascript"><span class="hljs-comment">/// &lt;reference path="./shapes.ts"/&gt;</span></code></pre>
+    <pre><code class="hljs bash">\&gt; tsc --out o.js main.ts &amp;&amp; node o.js
+40 <span class="hljs-literal">true</span></code></pre>
+
+
+    <h3>Podsumowując (bo poniżej są już tylko przykłady użycia)</h3>
+    <p>
+        Według mnie wydaje się niemądrym niekorzystanie z dobrodziejstwa TypeScript. W szczególności gdy można sobie do np SublimeText napisać poniższe zadanie, które skompiluje kod TypeScript do samego JavaScriptu i uruchomi go w NodeJs aby można było od razu zobaczyć wyniki swojej pracy.
+    </p>
+    
+
+
+    <h3>Instalacja</h3>
+    <p>
+        Instalacja nie jest specjalnie uciążliwa bo jeśli korzystamy z Visual Studio 2013 Update 2 to TypeScript jest wbudowany w to narzędzie. Jeśli chcemy kompilować samemu z linii poleceń za pomocą <code>tsc</code> to należy w konsoli wpisać poniższe w konsoli.
+    </p>
+    <pre><code class="hljs bash">\&gt; npm install -g typescript</code></pre>
+    <p>
+        Póki co nie robimy nic specjalnego czego nie oferuje strona domowa projektu. Co więcej dokładna instrukcja jak używać języka znajduje się pod adresem [1]. Najwięcej chyba zobrazuje przykład.
+    </p>
+    <h3>Przykład użycia</h3>
+    <pre><code class="hljs javascript">interface Person {
+    <span class="hljs-attr">FirstName</span>: string;
+    LastName: string;
+    hi();
+    elo();
+    havCtx(context : string): LambdaFunc;
+}
+
+interface LambdaFunc {
+    (prefix : string) : string;
+}
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Father</span> </span>{
+    FathersName : string;
+    <span class="hljs-keyword">constructor</span>() {}
+    private nop() : <span class="hljs-keyword">void</span> {
+        <span class="hljs-keyword">return</span>;
+    }
+}
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Student</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">Father</span> <span class="hljs-title">implements</span> <span class="hljs-title">Person</span> </span>{
+    <span class="hljs-keyword">static</span> PI : number = <span class="hljs-number">3.1415</span>;
+    FirstName: string;
+    LastName: string;
+    <span class="hljs-keyword">constructor</span>(first: string, last: string, father?: string) {
+        <span class="hljs-keyword">super</span>();
+        <span class="hljs-keyword">this</span>.FirstName = first;
+        <span class="hljs-keyword">this</span>.LastName = last;
+        <span class="hljs-keyword">this</span>.FathersName = father;
+
+        <span class="hljs-keyword">this</span>._lavaTemp = <span class="hljs-number">1000</span>;
+    }
+
+    public hi() {
+        <span class="hljs-keyword">return</span> <span class="hljs-string">'hello '</span> + <span class="hljs-keyword">this</span>.FirstName + <span class="hljs-string">'. '</span>;
+    }
+
+    public elo() : LambdaFunc {
+        <span class="hljs-keyword">return</span> (what:string):<span class="hljs-function"><span class="hljs-params">string</span> =&gt;</span> {
+            <span class="hljs-keyword">return</span> what + <span class="hljs-keyword">this</span>.FirstName;
+        }
+    }
+
+    public havCtx(context : string): LambdaFunc{
+        <span class="hljs-keyword">return</span> (what : string):<span class="hljs-function"><span class="hljs-params">string</span> =&gt;</span> {
+            <span class="hljs-keyword">return</span> context + <span class="hljs-string">"_"</span> + what + <span class="hljs-string">"_"</span> + <span class="hljs-keyword">this</span>.FirstName + <span class="hljs-string">"_sonOf_"</span> + <span class="hljs-keyword">this</span>.FathersName + <span class="hljs-string">". "</span>;
+        }
+    }
+
+    private _lavaTemp : number;
+
+    get LavaTemp() : number {
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>._lavaTemp;
+    }
+
+    set LavaTemp(newTemp : number) {
+        <span class="hljs-keyword">this</span>._lavaTemp = newTemp + <span class="hljs-number">273</span> + Student.PI;
+    }
+}
+
+interface IHybrid {
+    (i:number):string;
+    Name:string;
+    each(col:any);
+}
+<span class="hljs-keyword">var</span> Hybrid : IHybrid;
+
+<span class="hljs-function">(<span class="hljs-params">(</span>) =&gt;</span> {
+    <span class="hljs-keyword">var</span> fn : any = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">i : number</span>) : <span class="hljs-title">string</span> </span>{
+        <span class="hljs-keyword">return</span> <span class="hljs-string">"i="</span> + i;
+    }
+    fn.Name = <span class="hljs-string">"Hela"</span>;
+    fn.each = <span class="hljs-function">(<span class="hljs-params">col</span>) =&gt;</span> {
+        <span class="hljs-keyword">var</span> cnt = <span class="hljs-number">0</span>;
+        <span class="hljs-keyword">for</span>(<span class="hljs-keyword">var</span> k <span class="hljs-keyword">in</span> col) {
+            col[k];
+            cnt++;
+        }
+        <span class="hljs-keyword">return</span> cnt;
+    }
+
+    Hybrid = fn;
+})()
+
+
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">hello</span>(<span class="hljs-params">person : Person</span>) </span>{
+    <span class="hljs-keyword">return</span> <span class="hljs-string">"My name is "</span> + person.FirstName + <span class="hljs-string">' '</span> + person.LastName + <span class="hljs-string">'. '</span>;
+}
+
+<span class="hljs-keyword">var</span> s:Student = <span class="hljs-keyword">new</span> Student(<span class="hljs-string">"jan"</span>, <span class="hljs-string">"kowalski"</span>, <span class="hljs-string">"jerzy"</span>);
+<span class="hljs-keyword">var</span> p:Person = s;
+<span class="hljs-keyword">var</span> stype : <span class="hljs-keyword">typeof</span> Student = Student;
+
+s.LavaTemp = <span class="hljs-number">15</span>;
+
+<span class="hljs-keyword">var</span> f:LambdaFunc = p.elo();
+<span class="hljs-keyword">var</span> f2 : LambdaFunc = p.havCtx(<span class="hljs-string">"trololo"</span>);
+<span class="hljs-keyword">var</span> f3 : LambdaFunc = p.havCtx(<span class="hljs-string">"ada"</span>)
+
+<span class="hljs-built_in">console</span>.log(hello(p), p.hi(), s.LavaTemp, Student.PI, stype.PI, f(<span class="hljs-string">"firstName="</span>), f2(<span class="hljs-string">"elooo"</span>), Hybrid(<span class="hljs-number">3</span>), Hybrid.Name, Hybrid.each({<span class="hljs-attr">a</span>:<span class="hljs-number">3</span>,<span class="hljs-attr">b</span>:<span class="hljs-number">4</span>}));</code></pre>
+    <p>
+        Wynik działania:
+    </p>
+    <pre><code class="hljs javascript">My name is jan kowalski.  hello jan.  <span class="hljs-number">291.1415</span> <span class="hljs-number">3.1415</span> <span class="hljs-number">3.1415</span> firstName=jan trololo_elooo_jan_sonOf_jerzy.  i=<span class="hljs-number">3</span> Hela <span class="hljs-number">2</span></code></pre>
+    <p>
+        Tak wygląda w/w kod po skompilowaniu przez <code>tsc</code> (został użyty parametr <code>--target ES5</code> ponieważ dopiero od wersji ECMAScript5 dostępne są akcesory pól)
+    </p>
+
+    <pre><code class="hljs bash">\&gt; tsc --target ES5 TypeScript.node.js</code></pre>
+
+    <pre><code class="hljs javascript"><span class="hljs-keyword">var</span> __extends = <span class="hljs-keyword">this</span>.__extends || <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">d, b</span>) </span>{
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> p <span class="hljs-keyword">in</span> b) <span class="hljs-keyword">if</span> (b.hasOwnProperty(p)) d[p] = b[p];
+    <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">__</span>(<span class="hljs-params"></span>) </span>{ <span class="hljs-keyword">this</span>.constructor = d; }
+    __.prototype = b.prototype;
+    d.prototype = <span class="hljs-keyword">new</span> __();
+};
+<span class="hljs-keyword">var</span> Father = (<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+    <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Father</span>(<span class="hljs-params"></span>) </span>{
+    }
+    Father.prototype.nop = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+        <span class="hljs-keyword">return</span>;
+    };
+    <span class="hljs-keyword">return</span> Father;
+})();
+
+<span class="hljs-keyword">var</span> Student = (<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">_super</span>) </span>{
+    __extends(Student, _super);
+    <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Student</span>(<span class="hljs-params">first, last, father</span>) </span>{
+        _super.call(<span class="hljs-keyword">this</span>);
+        <span class="hljs-keyword">this</span>.FirstName = first;
+        <span class="hljs-keyword">this</span>.LastName = last;
+        <span class="hljs-keyword">this</span>.FathersName = father;
+
+        <span class="hljs-keyword">this</span>._lavaTemp = <span class="hljs-number">1000</span>;
+    }
+    Student.prototype.hi = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+        <span class="hljs-keyword">return</span> <span class="hljs-string">'hello '</span> + <span class="hljs-keyword">this</span>.FirstName + <span class="hljs-string">'. '</span>;
+    };
+
+    Student.prototype.elo = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+        <span class="hljs-keyword">var</span> _this = <span class="hljs-keyword">this</span>;
+        <span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">what</span>) </span>{
+            <span class="hljs-keyword">return</span> what + _this.FirstName;
+        };
+    };
+
+    Student.prototype.havCtx = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">context</span>) </span>{
+        <span class="hljs-keyword">var</span> _this = <span class="hljs-keyword">this</span>;
+        <span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">what</span>) </span>{
+            <span class="hljs-keyword">return</span> context + <span class="hljs-string">"_"</span> + what + <span class="hljs-string">"_"</span> + _this.FirstName + <span class="hljs-string">"_sonOf_"</span> + _this.FathersName + <span class="hljs-string">". "</span>;
+        };
+    };
+
+    <span class="hljs-built_in">Object</span>.defineProperty(Student.prototype, <span class="hljs-string">"LavaTemp"</span>, {
+        <span class="hljs-attr">get</span>: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>._lavaTemp;
+        },
+        <span class="hljs-attr">set</span>: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">newTemp</span>) </span>{
+            <span class="hljs-keyword">this</span>._lavaTemp = newTemp + <span class="hljs-number">273</span> + Student.PI;
+        },
+        <span class="hljs-attr">enumerable</span>: <span class="hljs-literal">true</span>,
+        <span class="hljs-attr">configurable</span>: <span class="hljs-literal">true</span>
+    });
+
+    Student.PI = <span class="hljs-number">3.1415</span>;
+    <span class="hljs-keyword">return</span> Student;
+})(Father);
+
+<span class="hljs-keyword">var</span> Hybrid;
+
+(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+    <span class="hljs-keyword">var</span> fn = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">i</span>) </span>{
+        <span class="hljs-keyword">return</span> <span class="hljs-string">"i="</span> + i;
+    };
+    fn.Name = <span class="hljs-string">"Hela"</span>;
+    fn.each = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">col</span>) </span>{
+        <span class="hljs-keyword">var</span> cnt = <span class="hljs-number">0</span>;
+        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> k <span class="hljs-keyword">in</span> col) {
+            col[k];
+            cnt++;
+        }
+        <span class="hljs-keyword">return</span> cnt;
+    };
+
+    Hybrid = fn;
+})();
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">hello</span>(<span class="hljs-params">person</span>) </span>{
+    <span class="hljs-keyword">return</span> <span class="hljs-string">"My name is "</span> + person.FirstName + <span class="hljs-string">' '</span> + person.LastName + <span class="hljs-string">'. '</span>;
+}
+
+<span class="hljs-keyword">var</span> s = <span class="hljs-keyword">new</span> Student(<span class="hljs-string">"jan"</span>, <span class="hljs-string">"kowalski"</span>, <span class="hljs-string">"jerzy"</span>);
+<span class="hljs-keyword">var</span> p = s;
+<span class="hljs-keyword">var</span> stype = Student;
+
+s.LavaTemp = <span class="hljs-number">15</span>;
+
+<span class="hljs-keyword">var</span> f = p.elo();
+<span class="hljs-keyword">var</span> f2 = p.havCtx(<span class="hljs-string">"trololo"</span>);
+<span class="hljs-keyword">var</span> f3 = p.havCtx(<span class="hljs-string">"ada"</span>);
+
+<span class="hljs-built_in">console</span>.log(hello(p), p.hi(), s.LavaTemp, Student.PI, stype.PI, f(<span class="hljs-string">"firstName="</span>), f2(<span class="hljs-string">"elooo"</span>), Hybrid(<span class="hljs-number">3</span>), Hybrid.Name, Hybrid.each({ <span class="hljs-attr">a</span>: <span class="hljs-number">3</span>, <span class="hljs-attr">b</span>: <span class="hljs-number">4</span> }));</code></pre>
+    <p>
+        <ul class="no-bullet nopad">
+            <li>[1] - <a href="http://www.typescriptlang.org/Handbook" rel="nofollow" target="blank">http://www.typescriptlang.org/Handbook</a></li>
+            <li>[2] - <a href="https://github.com/borisyankov/DefinitelyTyped" rel="nofollow" target="blank">https://github.com/borisyankov/DefinitelyTyped</a></li>
+        </ul>
+    </p>
+</div>
+
+    </section>
+</body>
+</html>

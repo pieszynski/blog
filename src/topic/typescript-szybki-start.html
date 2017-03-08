@@ -1,0 +1,346 @@
+
+<div>
+    <h1>TypeScript - szybki start <small>05.XI.2014</small></h1>
+
+
+    <h3>Dlaczego TypeScript?</h3>
+    <p>
+        Siłą JavaScriptu polega na tym, że jest on dynamiczny i niczym nie ograniczony. Można za pomocą jednej linii zrealizować funkjonalności, których realizacja w C# byłaby dość uciążliwa.
+    </p>
+    <p>
+        Mowa tu nie tylko o wbudowanych metodach takich jak <code>setTimeout</code> czy <code>setInterval</code> dla których w C# należałoby stworzyć oddzielny wątek, <code>Timer</code> lub <code>Task</code>. Ale również o dosyć swobodnym podejściu do istnienia metod ich przepinania oraz (niestety w dużej mierze problematycznego) wskaźnika <code>this</code> i co najważniejsze dość liberalnym podejściu do parametrów przekazywanych do metod.
+    </p>
+    <p>
+        Niestety wraz z niezwykłą elastycznością języka pojawiają się problemy, które nie są spotykane w językach silnie typowanych, np C#. Gdzie przekazywane obiekty mają (w 99,9% przypadków - przypadek <code>dynamic</code>) jasno określony typ.
+    </p>
+    <p>
+        Dlatego jeśli nie mamy dobrego środowiska, które podpowiada nam typy obiektów przekazywanych do metod w JavaScript, a dokładniej ich pól oraz metod, sprawa staje się dość uciążliwa.
+    </p>
+    <p>
+        Z pomocą przychodzi TypeScript, który jest jedynie delikatym rozszerzeniem dla kodu tworzonego w JavaScript. Dodatkowo nie narzuca kompletnej zmiany składni tak jak to ma miejsce w CoffeeScript a pozwala edytorom podpowiadającym składnię na trafne sugerowanie podpowiedzi podczas tworzenia kodu - w Visual Studio 2013 działa to wyśmienicie.
+    </p>
+    <p>
+        Poza tym nawet jeśli edytor nie osbługuje w pełni podpowiedzi z kompilatora TypeScript to przecież sam kompilator wyświetla błędy kompilacji i na ich podstawie można łatwo zdiagnozować problem.
+    </p>
+    <p>
+        To nie wszystko. Dostajemy również dziedziczenie klas, którego standardowo w JavaScript nie ma i trzeba troszkę się namęczyć i uważać na pomyłki lub literówki przy tworzeniu kodu niepotrzebnie generując szablonowe kawałki kodu. Tu TypeScipt błyszczy (przykłady poniżej - wersja kodu sprzed kompilacji jest dużo bardziej czytelna i nie zawiera zbędnych "śmieci", które zaciemniają zrozumienie kodu - co nie oznacza, że są niepotrzebne).
+    </p>
+
+
+    <h3>TypeScript vs jQuery</h3>
+    <p>
+        Faktem jest, że na rynku istnieje wiele bibliotek JavaScript, które nie zostały stworzone przy użyciu TypeScript i nie posiadają silnie typowanych definicji swoich obiektów. Przykładami są właśnie jQuery czy AngularJs.
+    </p>
+    <p>
+        Tu z pomocą przychodzi projekt [2] rozwijany na GitHub-ie będący swojego rodzaju repozytorium definicji typów dla bibliotek, które ich w świadomy sposób nie tworzą.
+    </p>
+
+
+    <h3>Modułowość</h3>
+    <p>
+        TypeScript w bardzo prosty sposób pozwala na tworzenie modułów, które łatwo jest potem użyć do innch celów. Poniższy przykład zobrazuje sytuację.
+    </p>
+    %%%#code_ts^
+// shapes.ts
+
+module Shapes {
+    export class Polygon {
+        public x : number;
+        setX(_x : number) {
+            this.x = _x;
+        }
+        public isSquare() {
+            return false;
+        }
+    }
+}
+    #%%%
+    %%%#code_ts^
+// main.ts
+
+class Square extends Shapes.Polygon {
+    constructor(dim : number) {
+        super();
+        this.setX(dim);
+    }
+    public isSquare() {
+        return true;
+    }
+}
+
+var s : Shapes.Polygon = new Square(40);
+console.log(s.x, s.isSquare());
+
+// wynik: 40 true
+    #%%%
+    <p>
+        Kompilacja i uruchomienie testowe:
+    </p>
+    %%%#code_bash^
+\> tsc --out o.js shapes.ts main.ts && node o.js
+40 true
+    #%%%
+    <p>
+        Ważne jest jednak aby nie zamienić kolejności plików kompilowanych przez TypeScript bo dostaniemy komunikat jak poniżej. Kompilator TypeScript dołącza do pliku wynikowego kompilowane pliki w kolejności jakiej zostały przekazane do polecenia.
+    </p>
+    %%%#code_bash^
+...\o.js:17
+})(Shapes.Polygon);
+         ^
+TypeError: Cannot read property 'Polygon' of undefined
+    #%%%
+    <p>
+        Jeśli jednak nie chcemy podawać na raz kilku plików możemy je referować do siebie wzajemnie umieszczając odpowiednią dyrektywę w komentarzu na początku pliku.
+    </p>
+    %%%#code_ts^
+/// <reference path="./shapes.ts"/>
+    #%%%
+    %%%#code_bash^
+\> tsc --out o.js main.ts && node o.js
+40 true
+    #%%%
+
+
+    <h3>Podsumowując (bo poniżej są już tylko przykłady użycia)</h3>
+    <p>
+        Według mnie wydaje się niemądrym niekorzystanie z dobrodziejstwa TypeScript. W szczególności gdy można sobie do np SublimeText napisać poniższe zadanie, które skompiluje kod TypeScript do samego JavaScriptu i uruchomi go w NodeJs aby można było od razu zobaczyć wyniki swojej pracy.
+    </p>
+    %%%#code_tson^
+{
+    "cmd": ["tsc", "--target", "ES5", "$file", "&", "node", "$file_path\\\\$file_base_name.js"],
+    "selector": "source.ts",
+    "file_regex": "",
+    "shell": true
+}
+    #%%%
+
+
+    <h3>Instalacja</h3>
+    <p>
+        Instalacja nie jest specjalnie uciążliwa bo jeśli korzystamy z Visual Studio 2013 Update 2 to TypeScript jest wbudowany w to narzędzie. Jeśli chcemy kompilować samemu z linii poleceń za pomocą <code>tsc</code> to należy w konsoli wpisać poniższe w konsoli.
+    </p>
+    %%%#code_bash^
+\> npm install -g typescript
+    #%%%
+    <p>
+        Póki co nie robimy nic specjalnego czego nie oferuje strona domowa projektu. Co więcej dokładna instrukcja jak używać języka znajduje się pod adresem [1]. Najwięcej chyba zobrazuje przykład.
+    </p>
+    <h3>Przykład użycia</h3>
+    %%%#code_ts^
+interface Person {
+    FirstName: string;
+    LastName: string;
+    hi();
+    elo();
+    havCtx(context : string): LambdaFunc;
+}
+
+interface LambdaFunc {
+    (prefix : string) : string;
+}
+
+class Father {
+    FathersName : string;
+    constructor() {}
+    private nop() : void {
+        return;
+    }
+}
+
+class Student extends Father implements Person {
+    static PI : number = 3.1415;
+    FirstName: string;
+    LastName: string;
+    constructor(first: string, last: string, father?: string) {
+        super();
+        this.FirstName = first;
+        this.LastName = last;
+        this.FathersName = father;
+
+        this._lavaTemp = 1000;
+    }
+
+    public hi() {
+        return 'hello ' + this.FirstName + '. ';
+    }
+
+    public elo() : LambdaFunc {
+        return (what:string):string => {
+            return what + this.FirstName;
+        }
+    }
+
+    public havCtx(context : string): LambdaFunc{
+        return (what : string):string => {
+            return context + "_" + what + "_" + this.FirstName + "_sonOf_" + this.FathersName + ". ";
+        }
+    }
+
+    private _lavaTemp : number;
+
+    get LavaTemp() : number {
+        return this._lavaTemp;
+    }
+
+    set LavaTemp(newTemp : number) {
+        this._lavaTemp = newTemp + 273 + Student.PI;
+    }
+}
+
+interface IHybrid {
+    (i:number):string;
+    Name:string;
+    each(col:any);
+}
+var Hybrid : IHybrid;
+
+(() => {
+    var fn : any = function(i : number) : string {
+        return "i=" + i;
+    }
+    fn.Name = "Hela";
+    fn.each = (col) => {
+        var cnt = 0;
+        for(var k in col) {
+            col[k];
+            cnt++;
+        }
+        return cnt;
+    }
+
+    Hybrid = fn;
+})()
+
+
+
+function hello(person : Person) {
+    return "My name is " + person.FirstName + ' ' + person.LastName + '. ';
+}
+
+var s:Student = new Student("jan", "kowalski", "jerzy");
+var p:Person = s;
+var stype : typeof Student = Student;
+
+s.LavaTemp = 15;
+
+var f:LambdaFunc = p.elo();
+var f2 : LambdaFunc = p.havCtx("trololo");
+var f3 : LambdaFunc = p.havCtx("ada")
+
+console.log(hello(p), p.hi(), s.LavaTemp, Student.PI, stype.PI, f("firstName="), f2("elooo"), Hybrid(3), Hybrid.Name, Hybrid.each({a:3,b:4}));
+    #%%%
+    <p>
+        Wynik działania:
+    </p>
+    %%%#code_js^
+My name is jan kowalski.  hello jan.  291.1415 3.1415 3.1415 firstName=jan trololo_elooo_jan_sonOf_jerzy.  i=3 Hela 2
+    #%%%
+    <p>
+        Tak wygląda w/w kod po skompilowaniu przez <code>tsc</code> (został użyty parametr <code>--target ES5</code> ponieważ dopiero od wersji ECMAScript5 dostępne są akcesory pól)
+    </p>
+
+    %%%#code_bash^
+\> tsc --target ES5 TypeScript.node.js
+    #%%%
+
+    %%%#code_ts^
+var __extends = this.__extends || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    __.prototype = b.prototype;
+    d.prototype = new __();
+};
+var Father = (function () {
+    function Father() {
+    }
+    Father.prototype.nop = function () {
+        return;
+    };
+    return Father;
+})();
+
+var Student = (function (_super) {
+    __extends(Student, _super);
+    function Student(first, last, father) {
+        _super.call(this);
+        this.FirstName = first;
+        this.LastName = last;
+        this.FathersName = father;
+
+        this._lavaTemp = 1000;
+    }
+    Student.prototype.hi = function () {
+        return 'hello ' + this.FirstName + '. ';
+    };
+
+    Student.prototype.elo = function () {
+        var _this = this;
+        return function (what) {
+            return what + _this.FirstName;
+        };
+    };
+
+    Student.prototype.havCtx = function (context) {
+        var _this = this;
+        return function (what) {
+            return context + "_" + what + "_" + _this.FirstName + "_sonOf_" + _this.FathersName + ". ";
+        };
+    };
+
+    Object.defineProperty(Student.prototype, "LavaTemp", {
+        get: function () {
+            return this._lavaTemp;
+        },
+        set: function (newTemp) {
+            this._lavaTemp = newTemp + 273 + Student.PI;
+        },
+        enumerable: true,
+        configurable: true
+    });
+
+    Student.PI = 3.1415;
+    return Student;
+})(Father);
+
+var Hybrid;
+
+(function () {
+    var fn = function (i) {
+        return "i=" + i;
+    };
+    fn.Name = "Hela";
+    fn.each = function (col) {
+        var cnt = 0;
+        for (var k in col) {
+            col[k];
+            cnt++;
+        }
+        return cnt;
+    };
+
+    Hybrid = fn;
+})();
+
+function hello(person) {
+    return "My name is " + person.FirstName + ' ' + person.LastName + '. ';
+}
+
+var s = new Student("jan", "kowalski", "jerzy");
+var p = s;
+var stype = Student;
+
+s.LavaTemp = 15;
+
+var f = p.elo();
+var f2 = p.havCtx("trololo");
+var f3 = p.havCtx("ada");
+
+console.log(hello(p), p.hi(), s.LavaTemp, Student.PI, stype.PI, f("firstName="), f2("elooo"), Hybrid(3), Hybrid.Name, Hybrid.each({ a: 3, b: 4 }));
+    #%%%
+    <p>
+        <ul class="no-bullet nopad">
+            <li>[1] - <a href="http://www.typescriptlang.org/Handbook" rel="nofollow" target="blank">http://www.typescriptlang.org/Handbook</a></li>
+            <li>[2] - <a href="https://github.com/borisyankov/DefinitelyTyped" rel="nofollow" target="blank">https://github.com/borisyankov/DefinitelyTyped</a></li>
+        </ul>
+    </p>
+</div>

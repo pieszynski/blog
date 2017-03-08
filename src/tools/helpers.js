@@ -29,9 +29,21 @@ var pg = require('./percentage.js');
             var result = hljs.highlight('cs', v.trim());
             return '<pre><code class="hljs cs">' + result.value + '</code></pre>';
         },
+        code_js: function(k,v) {
+            var result = hljs.highlight('javascript', v.trim());
+            return '<pre><code class="hljs javascript">' + result.value + '</code></pre>';
+        },
+        code_ts: function(k,v) {
+            var result = hljs.highlight('javascript', v.trim());
+            return '<pre><code class="hljs javascript">' + result.value + '</code></pre>';
+        },
         code_bash: function(k,v) {
             var result = hljs.highlight('bash', v.trim());
             return '<pre><code class="hljs bash">' + result.value + '</code></pre>';
+        },
+        code_json: function(k,v) {
+            var result = hljs.highlight('json', v.trim());
+            return '<pre><code class="hljs json">' + result.value + '</code></pre>';
         }
     }
 
