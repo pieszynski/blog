@@ -7,6 +7,12 @@
     "layout": "static/layout.html",
     "pagesRoute" : "temat",
     "pagesPath" : "topic",
+    "javascript-dependencies": {
+        "jquery":"2.1.1",
+        "angular": "1.3.x",
+        "underscore": "1.7.0",
+        "underscore.string": "2.3.3"
+    },
     "pages" : [
         {
             "name" : "git-poradnik",
@@ -19,6 +25,12 @@
             "title" : "TypeScript - szybki start",
             "description" : "TypeScript - instajacja, pierwsze kroki, itp. Generalnie starter.",
             "date" : "2014-11-05"
+        },
+        {
+            "name" : "animacje-css",
+            "title" : "Animacje za pomocą CSS",
+            "description" : "Animacje za pomocą CSS",
+            "date" : "2014-10-25"
         }
     ]
 }

@@ -31,7 +31,7 @@ a:hover.topic-link div {
     transition: border-left-color 0.2s, border-left-width 0.2s;
 }
 
-h1 small {
+h1 small, h1 .top-date {
     color: #606c71;
     font-size: 1.1rem;
 }

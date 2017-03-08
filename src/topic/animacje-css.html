@@ -1,0 +1,234 @@
+<script type="text/javascript">
+</script>
+
+<div>
+    <style type="text/css" scoped>
+
+        .roundy {
+            border-radius:4px;
+            -webkit-border-radius:4px;
+        }
+
+        @keyframes fade {
+            from { opacity: 1.0; }
+            50% { opacity: 0.4; }
+            to { opacity: 1.0; }
+        }
+        @-webkit-keyframes fade {
+            from { opacity: 1.0; }
+            50% { opacity: 0.4; }
+            to { opacity: 1.0; }
+        }
+
+        .blink {
+            animation: fade 3000ms infinite;
+            -webkit-animation: fade 3000ms infinite;
+            background-color:#4B946A;
+            color: #fff;
+            text-align: center;
+        }
+
+        @keyframes bounce {
+            from { left: 0%; }
+            50% { left: 90%; }
+            to { left: 0%; }
+        }
+        @-webkit-keyframes bounce {
+            from { left: 0%; }
+            50% { left: 90%; }
+            to { left: 0%; }
+        }
+        .bouncy {
+            position: relative;
+            height: 40px;
+        }
+        .bouncy .brect {
+            animation: bounce 4000ms infinite;
+            -webkit-animation: bounce 4000ms infinite;
+            position: absolute;
+            top: 0px;
+            height: 100%;
+            width: 10%;
+            background-color: #4a148c;
+            color: #fff;
+        }
+
+        @keyframes lrot {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @-webkit-keyframes lrot {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .still-loading {
+            text-align: center;
+        }
+        .still-loading .lanim {
+            animation: lrot 1000ms linear infinite;
+            -webkit-animation: lrot 1000ms linear infinite;
+        }
+
+        #gohome {
+            cursor: pointer;
+        }
+
+        @keyframes l1anim {
+            from { transform: translate(0,0) rotate(0deg) scaleX(1); }
+            to { transform: translate(0,11px) rotate(-45deg) scaleX(.5); }
+        }
+        @-webkit-keyframes l1anim {
+            from { transform: translate(0,0) rotate(0deg) scaleX(1); }
+            to { transform: translate(0,11px) rotate(-45deg) scaleX(.5); }
+        }
+        .sstart .l1 {
+            transform-origin: 10px 10px;
+            animation: l1anim 400ms ease-in;
+            -webkit-animation: l1anim 400ms ease-in;
+        }
+        .sstop .l1 {
+            transform-origin: 10px 10px;
+            animation: l1anim 400ms ease-in reverse;
+            -webkit-animation: l1anim 400ms ease-in reverse;
+        }
+
+        @keyframes l3anim {
+            from { transform: translate(0,0) rotate(0deg) scaleX(1); }
+            to { transform: translate(0,-11px) rotate(45deg) scaleX(.5); }
+        }
+        @-webkit-keyframes l3anim {
+            from { transform: translate(0,0) rotate(0deg) scaleX(1); }
+            to { transform: translate(0,-11px) rotate(45deg) scaleX(.5); }
+        }
+        .sstart .l3 {
+            transform-origin: 10px 30px;
+            animation: l3anim 400ms ease-in;
+            -webkit-animation: l3anim 400ms ease-in;
+        }
+        .sstop .l3 {
+            transform-origin: 10px 30px;
+            animation: l3anim 400ms ease-in reverse;
+            -webkit-animation: l3anim 400ms ease-in reverse;
+        }
+
+    </style>
+    <h1>Animacje za pomocą CSS<top-date>25.X.2014</top-date></h1>
+    <p>
+        Kontynuując temat apliacji hybrydowych warto się zastanowić nad ich wydajnością. Ważnym jest aby aplikacja działała płynnie i swym zachowaniem odpowiadała oczekiwaniom użytkownika a nie karała go za każdą akcję podejmowaną przez niego.
+    </p>
+    <p>
+        Wykonywanie animacji interfejsu za pomocą JavaScript nie są pod tym względem najlepszym rozwiązaniem bo:
+    </p>
+    <div>
+        <div class="half-container">
+            <div class="three-quaters-width">
+                <ol>
+                    <li>Wszyskie operacje na stronie wykonywane w JavaScript przeglądarka uruchamia w jednym wątku (wątek główny interfejsu użytkownika) a zatem następują one w sekwencji, czyli albo animujemy albo wykonujemy akcje - nie można zrobić kilku rzeczy jednocześnie.</li>
+                    <li>Animacje w CSS są wspierane sprzętowo* i wykonywane w oddzielnym wątku (wątek kompozycji) - większa część obliczeń przeniesiona zostaje na GPU i w niewielkim stopniu zużywa CPU. (Rys. 1). Więcej informacji na temat wewnętrznego działania przeglądarek - [1].</li>
+                    <li>Gdy zmieniamy kartę lub animacja przestaje być widoczna na ekranie (przewijamy stronę) animacja w CSS przestaje obiążać GPU bo nie jest rysowana na widocznej częsci ekranu ale nadal jest kontynuowana (jeśli wrócimy na kartę, lub przewiniemy stronę do poprzedniego miejsca, gdzie była animacja, będzie ona w innym miejscu niż była w momencie zmiany karty/przewinięcia) co wskazuje odczyt z aktualnego użycia CPU.</li>
+                    <li>Wspierane przez praktycznie wszystkie przeglądarki - [2] oraz [3].</li>
+                    <li>Do dyspozycji jest bogata lista różnego rodzaju transformacji nie ograniczając się tylko do takich jak przesunięcie, obrót czy skalowanie. ([4])
+                </ol>
+            </div>
+            <div class="quater-width">
+                <image-info info="Rys. 1) Obsługą animacji w CSS zajmuje się głównie procesor graficzny - GPU." src="/img/topic/animacje-css/chrome-zasoby.png"></image-info>
+            </div>
+        </div>
+    </div>
+    <p>
+        Pełna składnia atrybutu <code>animation</code> przedstawiona jest poniżej. Skrócona składnia wymaga podania nazwy animacji oraz czasu jej trwania. Reszta parametrów jest nieobowiązkowa.
+    </p>
+    <p>
+    <code>
+        animation: nazwa_animacji czas_trwania sposób_interpolacji opóźnienie_startowe ilość_powtórzeń kierunek_animacji;
+    </code>
+    </p>
+    <p>
+        Podstawową wiedzę na temat animacji w CSS3 można znaleźć w [5]. Poniżej umieszczam kilka bardzo prostych przykładowch animacji.
+    </p>
+    <div>
+        <div class="half-container">
+            <div class="quater-width">
+                <div class="headerInfo">Zmienna przeźrocztstość</div>
+                <div class="roundy blink">
+                    Zmienna przeźroczystość
+                </div>
+            </div>
+            <div class="quater-width stdPadChild">
+                <div class="headerInfo">Animacja położenia</div>
+                <div class="bouncy">
+                    <div class="roundy brect"></div>
+                </div>
+            </div>
+            <div class="quater-width stdPadChild">
+                <div class="headerInfo">Obrót obiektu</div>
+                <div class="still-loading">
+                    <span class="lanim glyphicon glyphicon-refresh"></span>
+                </div>
+            </div>
+            <div class="quater-width stdPadChild">
+                <div class="headerInfo">Animacja CSS w SVG (Chrome)</div>
+                <div id="gohome" style="float: left;">
+<svg width="50" height="40" xmlns="http://www.w3.org/2000/svg">
+    <line class="l1" x1="10" y1="10" x2="40" y2="10" style="stroke-width: 3px; stroke: blue;"/>
+    <line class="l2" x1="10" y1="20" x2="40" y2="20" style="stroke-width: 3px; stroke: blue;"/>
+    <line class="l3" x1="10" y1="30" x2="40" y2="30" style="stroke-width: 3px; stroke: blue;"/>
+</svg>
+                </div>
+                <span>Kliknij w ikonę</span>
+            </div>
+        </div>
+    </div>
+    <h3>*Nie wszystko złoto</h3>
+    <p>
+        Oczywiście nie wszystkie animacje można zrealizować za pomocą animacji w CSS. Podobnie z resztą nie jest prawdą, że wszystkie operacje w JavaScript nie są wspierane sprzętowo przez GPU. Bardzo dobrze wyjaśnia ten temat artykuł [7].
+    </p>
+    <p>
+        Dodatkowo w przypadku sterowania podłączaniem animacji CSS za pomocą JavaScript (na przykład na kliknięcie) nie wystarczy dodać/zmienić klasy posiadającej animację do atrybutu <code>class</code> - co wydawało by się logiczne. Należy natomiast stosować trik ze sklonowaniem elementu DOM, podmianą klas CSS odpowiadających za animację, wstawieniem go obok oryginalnego i usunięciem oryginalnego elementu.
+    </p>
+    <h3>Dodatkowe źródła informacji</h3>
+    <p>
+        <ul class="no-bullet nopad">
+            <li>[1] - <a href="http://blogs.adobe.com/webplatform/2014/03/18/css-animations-and-transitions-performance/" target="_blank" rel="nofollow">CSS animations and transitions performance: looking inside the browser</a></li>
+            <li>[2] - <a href="http://caniuse.com/#feat=css-animation" target="_blank" rel="nofollow">CanIUse - CSS3 Animation</a></li>
+            <li>[3] - <a href="http://caniuse.com/#feat=transforms2d" target="_blank" rel="nofollow">CanIUse - CSS3 Transforms</a></li>
+            <li>[4] - <a href="http://www.w3schools.com/cssref/css3_pr_transform.asp" target="_blank" rel="nofollow">CSS3 transform Property</a></li>
+            <li>[5] - <a href="http://www.w3schools.com/css/css3_animations.asp" target="_blank" rel="nofollow">W3Schools - CSS3 Animations</a></li>
+            <li>[6] - <a href="http://www.chromium.org/developers/design-documents/gpu-accelerated-compositing-in-chrome" target="_blank" rel="nofollow">GPU Accelerated Compositing in Chrome</a></li>
+            <li>[7] - <a href="http://css-tricks.com/myth-busting-css-animations-vs-javascript/" target="_blank" rel="nofollow">Myth Busting: CSS Animations vs. JavaScript</a></li>
+            <li>[8] - <a href="http://www.html5rocks.com/en/tutorials/speed/high-performance-animations/" target="_blank" rel="nofollow">High Performance Animations</a></li>
+            <li>[9] - <a href="https://wiki.mozilla.org/Platform/GFX/OffMainThreadCompositing" target="_blank" rel="nofollow">Off Main Thread Compositing</a></li>
+            <li>[10] - <a href="http://benoitgirard.wordpress.com/2012/05/15/off-main-thread-compositing-omtc-and-why-it-matters/" target="_blank" rel="nofollow">Off Main Thread Compositing (OMTC) and why it matters</a></li>
+            <!-- <li>[n] - <a href="" target="_blank" rel="nofollow"></a></li> -->
+        </ul>
+    </p>
+</div>
+
+<script type="text/javascript">
+    (function ($) {
+        var isHome = false;
+        var $home = $('#gohome');
+        $home.click(function () {
+            if(isHome) {
+                $home.removeClass('sstart');
+                //$home.context.offsetWidth = $home.context.offsetWidth;
+                var $cl = $home.clone(true);
+                $home.before($cl);
+                $home.remove();
+                $cl.addClass('sstop');
+                $home = $cl;
+            } else {
+                //$home.removeClass('sstop').addClass('sstart');
+                $home.removeClass('sstop');
+                //$home.context.offsetWidth = $home.context.offsetWidth;
+                var $cl = $home.clone(true);
+                $home.before($cl);
+                $home.remove();
+                $cl.addClass('sstart');
+                $home = $cl;
+            }
+
+            isHome = !isHome;
+        });
+    })(jQuery);
+</script>

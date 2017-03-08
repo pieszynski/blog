@@ -15,8 +15,14 @@
     <link href="/css/cayman.css" rel="stylesheet" />
     <link href="/css/highlight.min.css" rel="stylesheet" />
     <link href="/css/style.css" rel="stylesheet" />
+
+    <script type="text/javascript" src="/js/vendor/jquery.min.js"></script>
+    <script type="text/javascript" src="/js/vendor/angular.min.js"></script>
+    <script type="text/javascript" src="/js/vendor/underscore-min.js"></script>
+    <script type="text/javascript" src="/js/vendor/underscore.string.min.js"></script>
+    <script type="text/javascript" src="/js/layout.js"></script>
 </head>
-<body>
+<body ng-app="appRoot" ng-controller="rootCtrl as root">
     <section class="page-header">
         %%%#gohome^<div class="project-home"><a href="/">= Strona główna</a></div>#%%%
         <h1 class="project-name">%%%#name^#%%%</h1>
