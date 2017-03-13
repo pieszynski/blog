@@ -23,12 +23,13 @@ a.topic-link {
     text-decoration: none;
 }
 a.topic-link div {
-    border-left-width: 0;
+    border-left: 0 solid rgba(96,108,113,0.7);
+    padding-left: 0;
+    transition: border-left-width 0.2s ease-in-out, padding-left 0.2s ease-in-out;
 }
 a:hover.topic-link div {
-    border-left: 0.4rem solid rgba(96,108,113,0.7);
+    border-left-width: 0.4rem;
     padding-left: 1rem;
-    transition: border-left-color 0.2s, border-left-width 0.2s;
 }
 
 h1 small, h1 .top-date {

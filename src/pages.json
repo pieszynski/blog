@@ -31,6 +31,12 @@
             "title" : "Animacje za pomocą CSS",
             "description" : "Animacje za pomocą CSS",
             "date" : "2014-10-25"
+        },
+        {
+            "name" : "apache-cordova-start",
+            "title" : "Apache Cordova - konfiguracja środowiska",
+            "description" : "Apache Cordova - konfiguracja środowiska",
+            "date" : "2014-10-18"
         }
     ]
 }

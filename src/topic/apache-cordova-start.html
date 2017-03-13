@@ -1,0 +1,112 @@
+
+<div>
+    <h1>Apache Cordova - konfiguracja środowiska<top-date>18.X.2014</top-date></h1>
+    <h3>Przygotowanie środowiska Windows w wersji 7+</h3>
+    <p>
+        Aby przygotować sobie środowisko, na którym będzie można tworzyć aplikacje hybrydowe za pomocą <a href="http://cordova.apache.org/" target="_blank" rel="nofollow">Apache Cordova</a>, należy postępować wg. poniższych punktów.
+    </p>
+    <p>
+        <div class="half-container">
+            <div class="three-quaters-width">
+                <ol>
+                    <li>Instalacja NodeJS</li>
+                    <li>Instalacja JDK</li>
+                    <li>Instalacja Ant</li>
+                    <li>(Opcjonalnie) Instalacja Gradle koniecznie w wersji 1.10</li>
+                    <li>Instalacja ADT wraz z środowiskiem Android-19 (4.4.2)</li>
+                    <li>
+                        <div>
+                            Weryfikacja zmiennych środowiskowych (na podstawie <a href="http://cordova.apache.org/docs/en/3.3.0/guide_platforms_android_index.md.html#Android%20Platform%20Guide" target="_blank" rel="nofollow">wymagań projektu</a> Apache Cordova).
+                        </div>
+                        <div>
+    %%%#code_bash^
+ANDROID_HOME="C:\android\sdk"
+ANT_HOME="c:\ant"
+GRADLE_HOME="c:\gradle"
+JAVA_HOME="C:\Program Files\Java\jdk1.8.0_05"
+NODE_PATH="%AppData%\npm\node_modules"
+    #%%%
+                        </div>
+                        <div>
+                            Oraz rozszerzamy zmienną <code>PATH</code> o wartość:
+                        </div>
+                        <div>
+    %%%#code_bash^
+%ANDROID_HOME%\platform-tools;%ANDROID_HOME%\tools;%JAVA_HOME%\bin;%ANT_HOME%\bin;%GRADLE_HOME%\bin
+    #%%%
+                        </div>
+                        <div>
+                            Weryfikujemy instalację wykonując polecenia <code>javac</code> oraz <code>ant</code>. Jeśli coś się nie wykonuje to znaczy, że w konfiguracji jest coś nie tak.
+                        </div>
+                    </li>
+                    <li>
+                        <div>
+                            Instalacja pakietu Apache Cordova (tu z pomocą przychodzi <a href="http://docs.phonegap.com/en/3.5.0/guide_cli_index.md.html#The%20Command-Line%20Interface" target="_blank">istrukcja do PhoneGap</a>)
+                        </div>
+                        <div>
+    %%%#code_bash^
+\> npm install -g cordova
+\> cordova create hello com.example.hello HelloWorld
+\> cd hello
+\> cordova platform add android
+\> cordova platform ls
+\> cordova build
+\> cordova build android
+    #%%%
+                        </div>
+                        <p>
+                            Co skutkuje stworzeniem i skompilowaniem przykładowej wersji pod platformę Android do lokalizacji <code>hello\platforms\android\ant-build\CordovaApp-debug.apk</code>. Aplikację później można łatwo zainstalować poleceniem <code>adb install CordovaApp-debug.apk</code>. Jej wygląd przedstawiony jest na obrazku.
+                        </p>
+                        <p>
+                            Kod źródłowy aplikacji znajduje się lokalizacji <code>hello\www</code>. Jest tam plik <code>index.html</code>, który można wyświetlić w przeglądarce ale nie pojawi się już komunikat "Device is ready" tylko "Connecting to device".
+                        </p>
+                    </li>
+                </ol>
+            </div>
+            <div class="quater-width">
+                <image-info info="Wygląd aplikacji HelloWorld" src="/img/topic/apache-cordova-start/hello.png"></image-info>
+            </div>
+        </div>
+    </p>
+    <h3>Rozszerzenie o platformy dodatkowe</h3>
+    <p>
+        Ponieważ w Apache Cordova można tworzyć aplikacje jednocześnie pod wiele platform wygodnie jest rozwijać je najpierw w przeglądarce internetowej a dopiero potem publikować wyniki pracy na urządzenie mobilne (z resztą sama oficjalna strona Apache Cordova stwierdza, że ta platforma jest tylko do celów tworzenia aplikacji - pewnie przynajmniej na razie). Niestety otworzenie pliku <code>www/index.html</code> nie zadziała poprawnie gdyż nie wykonają się zdarzenia standardowo wykonywane na platformie Apache Cordova. Dlatego wpisując polecenie:
+    </p>
+    %%%#code_bash^
+\> cordova platform add browser
+\> cordova build browser
+\> cordova emulate browser
+    #%%%
+    <p>
+        dodajemy nową platformę jako witrynę sieci Web i uruchamiamy w domyślnej przeglądarce. Zamiast <code>emulate</code> można użyć opcji, która uruchamia pod adresem <code>http://localhost:8000/</code> stronę z której można obejrzeć działanie aplikacji.
+    </p>
+    %%%#code_bash^
+\> cordova serve
+    #%%%
+    <h3>Problemy z Apache Cordova</h3>
+    <p>
+        Czasami po kompilacji gdzie wcześniej była zmieniana zawartość katalogu <code>www</code> może pojawić się komunikat:
+    </p>
+    %%%#code_bash^
+android/sdk/tools/ant/build.xml:659: java.lang.ArrayIndexOutOfBoundsException: 1
+[...]
+BUILD FAILED
+Total time: 2 seconds
+Error code 1 for command: ant with args: debug,-f
+    #%%%
+    <p>
+        Rozwiązać poniższy problem można w sposób opisany na StackOverflow: <a href="http://stackoverflow.com/questions/23583119/cordova-wont-build-anymore" rel="nofollow">Cordova won't build anymore</a>. Lub jeśli nie mamy ważnych plików związanych z konkretną platformą można wykonać operację usunięcia i dodania platformy raz jeszcze:
+    </p>
+    %%%#code_bash^
+\> cordova platform rm android
+\> cordova platform add android
+\> cordova build android
+    #%%%
+
+    <h3>Strony zawierające ciekawą treść powiązaną tematem</h3>
+    <p>
+        <ul class="no-bullet nopad">
+            <li>[1] - <a href="http://goratchet.com/" target="_blank" rel="nofollow">http://goratchet.com/</a> - Interfej użytkownika stworzony przez twórców Bootstrap'a.</li>
+        </ul>
+    </p>
+</div>
