@@ -15,6 +15,12 @@
     },
     "pages" : [
         {
+            "name" : "aws-hello-ec2",
+            "title" : "AWS:Hello EC2",
+            "description" : "AWS:Hello - pierwsza własna wirtualna maszyna.",
+            "date" : "2017-07-05"
+        },
+        {
             "name" : "git-poradnik",
             "title" : "GIT poradnik",
             "description" : "Szybki start z GIT. Podstawowe komendy i konfiguracja.",

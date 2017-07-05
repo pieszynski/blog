@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pieszyński Blog - pieszynski.com</title>
+
+    <link href="/favicon.png" rel="shortcut icon" />
+    <link href="/favicon.png" rel="icon" />
+
+    <!--<link href="/feed.rss" rel="alternate" type="application/rss+xml" title="pieszynski.com - co nowego?" />-->
+    <meta name="theme-color" content="#157878" />
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700" rel="stylesheet" />
+    <link href="/css/cayman.css" rel="stylesheet" />
+    <link href="/css/highlight.min.css" rel="stylesheet" />
+    <link href="/css/style.css" rel="stylesheet" />
+
+    <script type="text/javascript" src="/js/vendor/jquery.min.js"></script>
+    <script type="text/javascript" src="/js/vendor/angular.min.js"></script>
+    <script type="text/javascript" src="/js/vendor/underscore-min.js"></script>
+    <script type="text/javascript" src="/js/vendor/underscore.string.min.js"></script>
+    <script type="text/javascript" src="/js/layout.js"></script>
+    <script type="text/javascript" src="/js/menuCtrl.js"></script>
+</head>
+<body ng-app="appRoot" ng-controller="rootCtrl as root">
+    <section class="page-header">
+        
+        <h1 class="project-name">AWS:Hello EC2</h1>
+        <h2 class="project-tagline">AWS:Hello - pierwsza własna wirtualna maszyna.</h2>
+
+        <!--<a href="https://github.com/pages-themes/cayman" class="btn">View on GitHub</a>-->   
+
+        <div class="menu-btn-hook" ng-controller="menuCtrl as menu">
+            <div class="menu-btn menu-btn-main menu-btn-shadow" ng-click="menu.toggle()">
+                <div>i</div>
+            </div>
+            <div class="menu-btn menu-btn-sub" ng-click="menu.close()">
+                <a href="/"><div>&#8592;</div></a>
+            </div>
+        </div>
+    </section>
+    <section class="main-content">
+        <div>
+    <h1>AWS:Hello - pierwsza własna wirtualna maszyna<top-date>05.VII.2017</top-date></h1>
+
+    <h3>O co chodzi</h3>
+
+    <p>
+        Poniżej znajduje się "krótka" instrukcja jak należy stworzyć wirtualną maszynę (EC2) w AWS (Amazon Web Services).
+    </p>
+
+    <p>
+        Z uwagi na mnogość kroków i możliwość pomyłki Amazon udostępnił instrukcję ułatwiającą namierzenie problemu jeśli nie można zalogować się do maszyny przez np. putty - <a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/TroubleshootingInstancesConnecting.html#TroubleshootingInstancesConnectionTimeout" target="_blank" rel="nofollow">Troubleshooting Instances Connection Timeout</a>.
+    </p>
+
+    <h3>VPC - wirtualna sieć prywatna</h3>
+
+    <ul>
+        <li>Wybieramy region - np. Irlandia</li>
+        <li>VPC Dashboard</li>
+        <li>
+            <span>Your VPCs</span>
+            <ul>
+                <li>
+                    <span>Create VPC</span>
+                    <ul>
+                        <li>Name tag: <strong>VPC2</strong></li>
+                        <li>IPv4 CIDR block: <strong>10.0.0.0/16</strong></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <span>Subnets</span>
+            <ul>
+                <li>
+                    <span>Create Subnet</span>
+                    <ul>
+                        <li>Name tag: <strong>VPC2_NET1</strong></li>
+                        <li>VPC: <strong>vpc-xxxxxxxx | VPC2</strong></li>
+                        <li>IPv4 CIDR block: <strong>10.0.0.0/24</strong></li>
+                    </ul>
+                </li>
+                <li>
+                    <span>Subnet Actions - modify Auto-assign IP settings</span>
+                    <ul>
+                        <li>Enable auto-assign public IPv4 address: <strong>tak</strong></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <span>Internet Gateways</span>
+            <ul>
+                <li>
+                    <span>Create Internet Gateway</span>
+                    <ul>
+                        <li>Name tag: <strong>VPC2_INT_GATE</strong></li>
+                    </ul>
+                </li>
+                <li>
+                    <span>Attach To VPC</span>
+                    <ul>
+                        <li>VPC: <strong>vpc-xxxxxxxx | VPC2</strong></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <span>Route Tables</span>
+            <ul>
+                <li>Zaznaczamy wiersz związany z <strong>vpc-xxxxxxxx | VPC2</strong></li>
+                <li>Ustawiamy "Name": <strong>VPC2_RT</strong></li>
+                <li>
+                    <span>Zakładka: <strong>Routes</strong></span>
+                    <ul>
+                        <li>Edit</li>
+                        <li>Add another route</li>
+                        <li>Destination: <strong>0.0.0.0/0</strong></li>
+                        <li>Target (z listy wyboru): <strong>igw-xxxxxxxx | VPC2_INT_GATE</strong></li>
+                        <li>Save</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <span>Elastic IPs (opcjonalnie)</span>
+            <ul>
+                <li>
+                    <span>Allocate new address</span>
+                    <ul>
+                        <li>Allocate</li>
+                        <li>Elastic IP: <strong>xxx.xxx.xxx.xxx</strong></li>
+                        <li>Allocation ID: <strong>eipalloc-xxxxxxxx</strong></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>EC2 - maszyna wirtualna</h3>
+
+    <ul>
+        <li>EC2 Dashboard</li>
+        <li>
+            <span>Instances</span>
+            <ul>
+                <li>
+                    <span>Launch instance</span>
+                    <ol>
+                        <li>Choose AMI: <strong>Ubuntu Server</strong></li>
+                        <li>Choose an Instance Type: <strong>t2.micro</strong></li>
+                        <li>
+                            <span>Configure Instance Details</span>
+                            <ul>
+                                <li>Number of instances: <strong>1</strong></li>
+                                <li>Network: <strong>vpc-xxxxxxxx | VPC2</strong></li>
+                                <li>Subnet: <strong>subnet-xxxxxxxx | VPC2_NET1 | eu-west-1a</strong></li>
+                                <li>Auto-assign Public IP: <strong>Use subnet setting (Enable)</strong></li>
+                                <li>Shutdown behavior: <strong>Stop</strong></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <span>Add storage</span>
+                            <ul>
+                                <li>Add new volume</li>
+                                <li>Size: 3GiB</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <span>Add tags</span>
+                            <ul>
+                                <li>Add tag</li>
+                                <li>Key: <strong>Name</strong> (UWAGA: wyraz "Name" musi być z wielkiej litery!)</li>
+                                <li>Value: <strong>VPC2_NET1_EC2_v1</strong></li>
+                                <li>Instances: <strong>tak</strong></li>
+                                <li>Volumes: <strong>tak</strong></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <span>Configure Security Group</span>
+                            <ul>
+                                <li>Create a new security group</li>
+                                <li>Security group name: <strong>SecGrp1_SSH</strong></li>
+                                <li>Description: <strong>SecGrp1_SSH</strong></li>
+                                <li>
+                                    <ul>
+                                        <li>Type: <strong>SSH</strong></li>
+                                        <li>Source: <strong>0.0.0.0/0</strong></li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>Review Instance Launch - <strong>Launch</strong></li>
+                        <li>
+                            <span>Select an existing key pair or create new</span>
+                            <ul>
+                                <li>Istniejąca lub nowa</li>
+                                <li>I acknowledge that I have access to the selected private key file: <strong>tak</strong></li>
+                                <li><strong>Launch Instances</strong></li>
+                            </ul>
+                        </li>
+                    </ol>
+                </li>
+                <li>
+                    <span>Zakładka: "Description"</span>
+                    <ul>
+                        <li>IPv4 Public IP: <strong>xxx.xxx.xxx.xxx</strong></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>Logowanie do wirtualnej maszyny EC2 - putty</h3>
+
+    <p>
+        Ogólne dane logowania można uzyskać wybierając instancję EC2 a następnie opcję <strong>Actions - Connect</strong>. Zaprezentowany jest tam użytkownik i IP do logowania.
+    </p>
+
+    <ul>
+        <li>Host: <strong>xxx.xxx.xxx.xxx</strong></li>
+        <li>Port: <strong>22</strong></li>
+        <li>Connection - Data - Auto login user name: <strong>ubuntu</strong></li>
+        <li>Connection - SSH - Auth - Private key file for authentication: <strong>Ścieżka do pliku</strong></li>
+        <li>Open</li>
+    </ul>
+</div>
+    </section>
+</body>
+</html>
