@@ -1,4 +1,11 @@
 
+.imageDescription {
+    font-size: 0.7em;
+}
+.imageDescription:before {
+    content: 'Rys. ';
+}
+
 .page-header .project-home {
     font-size: 1.15rem;
     position: relative;

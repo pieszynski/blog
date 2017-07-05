@@ -1,0 +1,141 @@
+<div>
+    <h1>AWS EC2 - Instancje maszyn wirtualnych z serii T<top-date>05.VII.2017</top-date></h1>
+
+    <h3>Instancje ze zbiornikiem N<sub>2</sub>O</h3>
+
+    <p>
+        W którymś z webinariów Mirek Burnejko z <a href="http://chmurowisko.pl/" target="_blank" rel="nofollow">http://chmurowisko.pl/</a> zwrócił uwagę, że instancje maszyn EC2 z serii T wyglądają na znacznie tańsze (porównanie poniżej) od maszyn o takich samych parametrach np. w chmurze Azure - ale tylko pozornie. 
+    </p>
+
+    <p>
+        Dla porównania <i>1 Core, 2GB RAM</i>:
+    </p>
+
+    <ul>
+        <li>AWS EC2 t2.small: <strong>$16,56</strong></li>
+        <li>Azure F1S Standard: <strong>$35,51</strong></li>
+    </ul>
+
+    <p>
+        AWS nazywa instancje z serii T "<a href="https://aws.amazon.com/ec2/instance-types/#burst" target="_blank" rel="nofollow">Burstable Performance Instances</a>", czyli instancje, które zbierają CPU-kredyty (np. 6 CPU-kredytów/godzinę dla t2.micro). Każdy kredyt jest ważny jeden dzień (czyli dla t2.micro maksymalna ilość CPU-kredytów to 144). Jeden CPU-kredyt pozwala na użycie 100% CPU przez jedną minutę.
+    </p>
+
+    <p>
+        Jeśli wszystkie CPU-kredyty zostaną zużyte to wydajność maszyny zostaje zmniejszona do 10% swojej wartości nominalnej.
+    </p>
+
+    <h3>Sprawdzian</h3>
+
+    <p>
+        Do sprawdzenia zachowania chmury Amazona posłużył autorski skrypt w Pythonie, którego zadaniem było rozkręcenie procesora tak aby ciągle chodził na 100% z punktu widzenia maszyny na której pracuje. Dodatkowo co określony czas w sekundach (<i>SECS</i>) miał zapisywać wydajność maszyny do pliku - wydajność nie była liczona jako jakiś standard, np. FLOPSy, lecz jako ilość obrotów pętli w jednostce czasu. Takie wartości wystarczą do względnego porównania wydajności maszyny - przed i po tym jak skończą się CPU-kredyty.
+    </p>
+
+    %%%#code_python^
+#   Zapisuje ilosc operacji wykonanych w ciagu `SECS`
+#       co interwal `SECS`
+#
+
+import multiprocessing
+import platform
+import time
+
+from multiprocessing import Pool,Process
+
+# AWS: 3.5.2
+# LOC: 3.6.1
+
+SECS = 30
+
+def f(x):
+    t0 = time.time ( )
+    t = time.time ( )
+    d = 0.0
+    i = 0
+
+    fname = "dane.%i.txt" % x
+    with open ( file = fname, mode = "a", buffering = 1 ) as fi:
+        fi.write ( "# %ss proc: '%s' mach: '%s'\n" % ( 
+            SECS, 
+            platform.processor(), 
+            platform.machine() 
+            ) )
+        while True:
+            i += 1
+            if i % 10000:
+                t = time.time ( )
+                d = t - t0
+                if SECS < d:
+                    line = "%s,%i,%i\n" % ( 
+                        time.strftime ( "%Y-%m-%d %H:%M:%S", time.gmtime ( ) ), 
+                        x, 
+                        i 
+                        )
+                    fi.write ( line )
+                    t0 = t
+                    i = 0
+
+    return x * x
+
+if __name__ == "__main__":
+
+    procCount = multiprocessing.cpu_count ( )
+
+    print ( "Starting..." )
+    print ( "Cpu count: %i" % procCount )
+
+    for n in range ( procCount ):
+        p = Process ( target = f, args = ( n, ) )
+        p.start ( )
+
+    #%%%
+
+    <h3>Wyniki</h3>
+
+    <p>
+        Skrypt wygenerował plik, który wyglądał mniej więcej tak
+    </p>
+
+    %%%#code_bash^
+# 30s proc: 'x86_64' mach: 'x86_64'
+2017-06-29 21:06:02,0,58090031
+2017-06-29 21:06:32,0,58189701
+2017-06-29 21:07:02,0,58186789
+(...)
+2017-06-30 01:04:34,0,5693977
+2017-06-30 01:05:04,0,5712817
+2017-06-30 01:05:34,0,5674303
+    #%%%
+
+    <p>
+        Na tej podstawie można było przygotować wykres względnej wydajności maszyny EC2, który prezentuje się następująco:
+    </p>
+
+    <image-info info="Względna wydajność maszyny t2.micro na podstawie skryptu w Pythonie" src="/img/topic/aws-ec2-seria-t/pyPerf.png"></image-info>
+
+    <p>
+        Okresowe skoki wydajności kiedy już wydajność wynosiła tylko 10% nominalnej (o około 25% czyli około 12,5% całego CPU) są pewnie związane z tym, że Amazon dodaje kredyty co jakiś czas paczkami np. po 2 CPU-kredyty (2 z 6 dla t2.micro na godzinę). To w jakiś sposób tłumaczy okresowość pików - 3 piki na godzinę.
+    </p>
+
+    <p>
+        Dla porównania poniżej znajduje się wykres z konsoli AWS z monitoringu CPU w tym samym czasie.
+    </p>
+
+    <image-info info="Monitoring użycia CPU w konsoli AWS" src="/img/topic/aws-ec2-seria-t/monCpu.png"></image-info>
+
+    <p>
+        Po skorelowaniu wydajności z poniższym wykresem stanu CPU-kredytów widać, że w momencie skończenia się kredytów wydajność maszyny zmniejszyła się dziesięciokrotnie.
+    </p>
+
+    <image-info info="Monitoring CPU-kredytów w konsoli AWS" src="/img/topic/aws-ec2-seria-t/monCredit.png"></image-info>
+
+    <p>
+        Po wyłączeniu skryptu, w okolicach godziny 18 widać, że CPU-kredyty znów zaczynają się kumulować do granicznej wartości 144.
+    </p>
+
+    <h3>Wniosek</h3>
+
+    <p>
+        Wniosek jest taki sam jaki podsuwa nam Amazon - instancje z serii T są przeznaczone dla użytkowników, którzy w większości przypadków sporadycznie potrzebują pełnej mocy obliczeniowej maszyny.
+    </p>
+
+</div>

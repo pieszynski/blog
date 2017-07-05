@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pieszyński Blog - pieszynski.com</title>
+
+    <link href="/favicon.png" rel="shortcut icon" />
+    <link href="/favicon.png" rel="icon" />
+
+    <!--<link href="/feed.rss" rel="alternate" type="application/rss+xml" title="pieszynski.com - co nowego?" />-->
+    <meta name="theme-color" content="#157878" />
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700" rel="stylesheet" />
+    <link href="/css/cayman.css" rel="stylesheet" />
+    <link href="/css/highlight.min.css" rel="stylesheet" />
+    <link href="/css/style.css" rel="stylesheet" />
+
+    <script type="text/javascript" src="/js/vendor/jquery.min.js"></script>
+    <script type="text/javascript" src="/js/vendor/angular.min.js"></script>
+    <script type="text/javascript" src="/js/vendor/underscore-min.js"></script>
+    <script type="text/javascript" src="/js/vendor/underscore.string.min.js"></script>
+    <script type="text/javascript" src="/js/layout.js"></script>
+    <script type="text/javascript" src="/js/menuCtrl.js"></script>
+</head>
+<body ng-app="appRoot" ng-controller="rootCtrl as root">
+    <section class="page-header">
+        
+        <h1 class="project-name">AWS EC2 Seria T</h1>
+        <h2 class="project-tagline">AWS EC2 - Instancje maszyn wirtualnych z serii T</h2>
+
+        <!--<a href="https://github.com/pages-themes/cayman" class="btn">View on GitHub</a>-->   
+
+        <div class="menu-btn-hook" ng-controller="menuCtrl as menu">
+            <div class="menu-btn menu-btn-main menu-btn-shadow" ng-click="menu.toggle()">
+                <div>i</div>
+            </div>
+            <div class="menu-btn menu-btn-sub" ng-click="menu.close()">
+                <a href="/"><div>&#8592;</div></a>
+            </div>
+        </div>
+    </section>
+    <section class="main-content">
+        <div>
+    <h1>AWS EC2 - Instancje maszyn wirtualnych z serii T<top-date>05.VII.2017</top-date></h1>
+
+    <h3>Instancje ze zbiornikiem N<sub>2</sub>O</h3>
+
+    <p>
+        W którymś z webinariów Mirek Burnejko z <a href="http://chmurowisko.pl/" target="_blank" rel="nofollow">http://chmurowisko.pl/</a> zwrócił uwagę, że instancje maszyn EC2 z serii T wyglądają na znacznie tańsze (porównanie poniżej) od maszyn o takich samych parametrach np. w chmurze Azure - ale tylko pozornie. 
+    </p>
+
+    <p>
+        Dla porównania <i>1 Core, 2GB RAM</i>:
+    </p>
+
+    <ul>
+        <li>AWS EC2 t2.small: <strong>$16,56</strong></li>
+        <li>Azure F1S Standard: <strong>$35,51</strong></li>
+    </ul>
+
+    <p>
+        AWS nazywa instancje z serii T "<a href="https://aws.amazon.com/ec2/instance-types/#burst" target="_blank" rel="nofollow">Burstable Performance Instances</a>", czyli instancje, które zbierają CPU-kredyty (np. 6 CPU-kredytów/godzinę dla t2.micro). Każdy kredyt jest ważny jeden dzień (czyli dla t2.micro maksymalna ilość CPU-kredytów to 144). Jeden CPU-kredyt pozwala na użycie 100% CPU przez jedną minutę.
+    </p>
+
+    <p>
+        Jeśli wszystkie CPU-kredyty zostaną zużyte to wydajność maszyny zostaje zmniejszona do 10% swojej wartości nominalnej.
+    </p>
+
+    <h3>Sprawdzian</h3>
+
+    <p>
+        Do sprawdzenia zachowania chmury Amazona posłużył autorski skrypt w Pythonie, którego zadaniem było rozkręcenie procesora tak aby ciągle chodził na 100% z punktu widzenia maszyny na której pracuje. Dodatkowo co określony czas w sekundach (<i>SECS</i>) miał zapisywać wydajność maszyny do pliku - wydajność nie była liczona jako jakiś standard, np. FLOPSy, lecz jako ilość obrotów pętli w jednostce czasu. Takie wartości wystarczą do względnego porównania wydajności maszyny - przed i po tym jak skończą się CPU-kredyty.
+    </p>
+
+    <pre><code class="hljs python"><span class="hljs-comment">#   Zapisuje ilosc operacji wykonanych w ciagu `SECS`</span>
+<span class="hljs-comment">#       co interwal `SECS`</span>
+<span class="hljs-comment">#</span>
+
+<span class="hljs-keyword">import</span> multiprocessing
+<span class="hljs-keyword">import</span> platform
+<span class="hljs-keyword">import</span> time
+
+<span class="hljs-keyword">from</span> multiprocessing <span class="hljs-keyword">import</span> Pool,Process
+
+<span class="hljs-comment"># AWS: 3.5.2</span>
+<span class="hljs-comment"># LOC: 3.6.1</span>
+
+SECS = <span class="hljs-number">30</span>
+
+<span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">f</span><span class="hljs-params">(x)</span>:</span>
+    t0 = time.time ( )
+    t = time.time ( )
+    d = <span class="hljs-number">0.0</span>
+    i = <span class="hljs-number">0</span>
+
+    fname = <span class="hljs-string">"dane.%i.txt"</span> % x
+    <span class="hljs-keyword">with</span> open ( file = fname, mode = <span class="hljs-string">"a"</span>, buffering = <span class="hljs-number">1</span> ) <span class="hljs-keyword">as</span> fi:
+        fi.write ( <span class="hljs-string">"# %ss proc: '%s' mach: '%s'\n"</span> % ( 
+            SECS, 
+            platform.processor(), 
+            platform.machine() 
+            ) )
+        <span class="hljs-keyword">while</span> <span class="hljs-keyword">True</span>:
+            i += <span class="hljs-number">1</span>
+            <span class="hljs-keyword">if</span> i % <span class="hljs-number">10000</span>:
+                t = time.time ( )
+                d = t - t0
+                <span class="hljs-keyword">if</span> SECS &lt; d:
+                    line = <span class="hljs-string">"%s,%i,%i\n"</span> % ( 
+                        time.strftime ( <span class="hljs-string">"%Y-%m-%d %H:%M:%S"</span>, time.gmtime ( ) ), 
+                        x, 
+                        i 
+                        )
+                    fi.write ( line )
+                    t0 = t
+                    i = <span class="hljs-number">0</span>
+
+    <span class="hljs-keyword">return</span> x * x
+
+<span class="hljs-keyword">if</span> __name__ == <span class="hljs-string">"__main__"</span>:
+
+    procCount = multiprocessing.cpu_count ( )
+
+    <span class="hljs-keyword">print</span> ( <span class="hljs-string">"Starting..."</span> )
+    <span class="hljs-keyword">print</span> ( <span class="hljs-string">"Cpu count: %i"</span> % procCount )
+
+    <span class="hljs-keyword">for</span> n <span class="hljs-keyword">in</span> range ( procCount ):
+        p = Process ( target = f, args = ( n, ) )
+        p.start ( )</code></pre>
+
+    <h3>Wyniki</h3>
+
+    <p>
+        Skrypt wygenerował plik, który wyglądał mniej więcej tak
+    </p>
+
+    <pre><code class="hljs bash"><span class="hljs-comment"># 30s proc: 'x86_64' mach: 'x86_64'</span>
+2017-06-29 21:06:02,0,58090031
+2017-06-29 21:06:32,0,58189701
+2017-06-29 21:07:02,0,58186789
+(...)
+2017-06-30 01:04:34,0,5693977
+2017-06-30 01:05:04,0,5712817
+2017-06-30 01:05:34,0,5674303</code></pre>
+
+    <p>
+        Na tej podstawie można było przygotować wykres względnej wydajności maszyny EC2, który prezentuje się następująco:
+    </p>
+
+    <image-info info="Względna wydajność maszyny t2.micro na podstawie skryptu w Pythonie" src="/img/topic/aws-ec2-seria-t/pyPerf.png"></image-info>
+
+    <p>
+        Okresowe skoki wydajności kiedy już wydajność wynosiła tylko 10% nominalnej (o około 25% czyli około 12,5% całego CPU) są pewnie związane z tym, że Amazon dodaje kredyty co jakiś czas paczkami np. po 2 CPU-kredyty (2 z 6 dla t2.micro na godzinę). To w jakiś sposób tłumaczy okresowość pików - 3 piki na godzinę.
+    </p>
+
+    <p>
+        Dla porównania poniżej znajduje się wykres z konsoli AWS z monitoringu CPU w tym samym czasie.
+    </p>
+
+    <image-info info="Monitoring użycia CPU w konsoli AWS" src="/img/topic/aws-ec2-seria-t/monCpu.png"></image-info>
+
+    <p>
+        Po skorelowaniu wydajności z poniższym wykresem stanu CPU-kredytów widać, że w momencie skończenia się kredytów wydajność maszyny zmniejszyła się dziesięciokrotnie.
+    </p>
+
+    <image-info info="Monitoring CPU-kredytów w konsoli AWS" src="/img/topic/aws-ec2-seria-t/monCredit.png"></image-info>
+
+    <p>
+        Po wyłączeniu skryptu, w okolicach godziny 18 widać, że CPU-kredyty znów zaczynają się kumulować do granicznej wartości 144.
+    </p>
+
+    <h3>Wniosek</h3>
+
+    <p>
+        Wniosek jest taki sam jaki podsuwa nam Amazon - instancje z serii T są przeznaczone dla użytkowników, którzy w większości przypadków sporadycznie potrzebują pełnej mocy obliczeniowej maszyny.
+    </p>
+
+</div>
+    </section>
+</body>
+</html>
