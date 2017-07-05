@@ -44,6 +44,10 @@ var pg = require('./percentage.js');
         code_json: function(k,v) {
             var result = hljs.highlight('json', v.trim());
             return '<pre><code class="hljs json">' + result.value + '</code></pre>';
+        },
+        code_python: function(k,v) {
+            var result = hljs.highlight('python', v.trim());
+            return '<pre><code class="hljs python">' + result.value + '</code></pre>';
         }
     }
 
