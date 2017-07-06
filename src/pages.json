@@ -15,6 +15,12 @@
     },
     "pages" : [
         {
+            "name" : "aws-cloudfront-cdn",
+            "title" : "AWS CloudFront CDN",
+            "description" : "AWS - dostarczanie treści za pomocą CloudFront",
+            "date" : "2017-07-06"
+        },
+        {
             "name" : "aws-ec2-seria-t",
             "title" : "AWS EC2 Seria T",
             "description" : "AWS EC2 - Instancje maszyn wirtualnych z serii T",

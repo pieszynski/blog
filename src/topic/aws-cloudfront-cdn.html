@@ -1,0 +1,265 @@
+<div>
+    <h1>AWS - dostarczanie treści za pomocą CloudFront<top-date>06.VII.2017</top-date></h1>
+
+    <h3>Czym jest CloudFront</h3>
+
+    <p>
+        AWS CloudFront wygląda jak dość rozbudowany CDN (Content Delivery Network). Pozwala nie tylko na dostarczanie treści statycznych najbliżej, pod względem położenia na kuli ziemskiej, użytkownika (czyli to co potrafi standardowy CDN) ale również można w niego niejako wpleść treści dostarczane dynamicznie.
+    </p>
+
+    <p>
+        Wszystkie treści pobierane są zawsze z serwera źródłowego (origin server) i na podstawie ustawień w nagłówkach 'Cache-Control' w odpowiedzi od serwera, którą uzyska CloudFront, przechowywane są przez wskazany czas w lokalizacjach brzegowych. Zatem dla poniższych ustawień CloudFront zachowa się:
+    </p>
+
+    <ul>
+        <li><strong>Cache-Control: no-cache, no-store, must-revalidate</strong> - każde zapytanie skierowane do serwera CloudFront będzie skutkowało odczytaniem danych z serwera źródłowego</li>
+        <li><strong>Cache-Control: public, max-age=60</strong> - zapytanie kierowane do CloudFront będzie odświeżało zawartość co 60 sekund z serwera źródłowego a w czasie zapytań pomiędzy odświeżeniami zawartość będzie dostarczana tylko z serwerów brzegowych CloudFront</li>
+        <li><strong>Brak nagłówka Cache-Control</strong> - zostanie użyta wartość określona w polu <strong>Default TTL</strong></li>
+    </ul>
+
+    <p>
+        Więcej informacji na temat nagłówka <strong>Cache-Control</strong> znajduje się w dokumentacji <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control" target="_blank" rel="nofollow">MDN: Cache-Control</a>.
+    </p>
+
+    <h3>Przygotowanie do konfiguracji CloudFront</h3>
+
+    <p>
+        Stawiamy serwer WWW np. na EC2 (lub dowolny inny). Do tego przykładu posłuży pusty serwer na Ubuntu z NodeJs na pokładzie. Po zalogowaniu do serwera uruchamiamy plik <strong>server.js</strong> z poniższą zawartością. Wszystkie wyniki jego działania będą przedstawiane na konsoli.
+    </p>
+
+    %%%#code_js^
+// \> nodejs server.js 80
+//
+var http = require('http');
+
+var app = http.createServer(function(req,res) {
+
+    // zeby Chrome ciagle nie pytal
+    if ('/favicon.ico' === req.url) {
+        res.statusCode = 404;
+        res.end();
+        return;
+    }
+
+    if ('/' === req.url || '/initgo' === req.url) {
+        // dane prywatne bez buforowania
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        // dane statyczne-publiczne
+        //res.setHeader('Cache-Control', 'public, max-age=60');
+    }
+
+    var now = (new Date()).toISOString();
+    console.log(`${now} >>`, `url:${req.url}`);
+
+    res.statusCode = 200;
+    res.end('Teraz mamy: ' + now);
+    // Teraz mamy: 2017-07-06T17:36:01.640Z
+});
+
+app.listen(process.argv[2] || 1337);
+    #%%%
+
+    <h3>Przygotowanie S3</h3>
+
+    <p>
+        W AWS S3 tworzymy nowy pojemnik (jeśli do tej pory nie istniał) <strong>jakasnazwa.s3.amazonaws.com</strong> a w nim poniższą strukturę katalogów.
+    </p>
+
+    <ul>
+        <li><strong>cf-logs/</strong> - tu będą się pojawiać logi z usługi CloudFront</li>
+        <li>
+            <span><strong>cf-static/</strong> - katalog z elementami statycznymi (grafiki, itd)</span>
+            <ul>
+                <li>
+                    <span><strong>sta/</strong> katalog odpowiedzialny za zawartość adresu <strong>http://cf.pieszynski.com/sta/</strong></span>
+                    <ul>
+                        <li><strong>pol.png</strong> - obrazek PNG</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+    </ul>
+
+    <p>
+        Klikamy prawym na katalog <strong>cf-static/</strong> i wybieramy opcję <strong>Make public</strong> tak aby wszystkie elementy w tym katalogu były dostępne publicznie. Inaczej CloudFront nie będzie ich w stanie przekazać użytkownikowi końcowemu.
+    </p>
+
+    <p>
+        Jeśli w metadanych pliku <strong>pol.png</strong> ustawimy klucz <strong>Cache-Control</strong> to zostanie on wybrany zamiast ustawienia domyślnego w <strong>Default TTL</strong>.
+    </p>
+
+    <h3>Konfiguracja CloudFront</h3>
+
+    <ul>
+        <li>Przechodzimy do usługi CloudFront</li>
+        <li>
+            <span>Create Distribution</span>
+            <ol>
+                <li>Select delivery method - Web - <strong>Get Started</strong></li>
+                <li>
+                    <span>Create distribution</span>
+                    <ul>
+                        <li>
+                            <span>Origin settings</span>
+                            <ul>
+                                <li>Origin Domain Name: <strong>ec2-xxx.xxx.xxx.xxx.eu-west-1.compute.amazonaws.com</strong></li>
+                                <li>Origin ID: <strong>rootOriginId</strong></li>
+                                <li>
+                                    <span>Origin Custom Headers<span>
+                                    <ul>
+                                        <li>Header Name: <strong>X-PP-Front</strong></li>
+                                        <li>Value: <strong>EC2_v1</strong></li>
+                                        <li>Klikamy przycisk plusa <strong>(+)</strong></li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
+                            <span>Default Cache Behavior Settings</span>
+                            <ul>
+                                <li>Path Pattern: <strong>Default (*)</strong></li>
+                                <li>Allowed HTTP Methods: <strong>GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE</strong></li>
+                                <li>Forward Headers: <strong>Whitelist</strong></li>
+                                <li>Whitelist Headers: <strong>CloudFront-Viewer-Country</strong></li>
+                                <li>Object Caching: <strong>Customize</strong></li>
+                                <li>Minimum TTL: <strong>0</strong></li>
+                                <li>Maximum TTL: <strong>30</strong></li>
+                                <li>Default TTL: <strong>20</strong></li>
+                                <li>Compress Objects Automatically: <strong>tak</strong></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <span>Distribution Settings</span>
+                            <ul>
+                                <li>Alternate Domain Names (CNAMEs): <strong>pf.pieszynski.com</strong></li>
+                                <li>Default Root Object: <strong>initgo</strong> albo <strong>index.html</strong></li>
+                                <li>Logging: <strong>tak</strong></li>
+                                <li>Bucket for Logs: <strong>jakasnazwa.s3.amazonaws.com</strong></li>
+                                <li>Log Prefix: <strong>cf-logs/</strong></li>
+                            </ul>
+                        </li>
+                        <li><strong>Create distribution</strong></li>
+                    </ul>
+                </li>
+            </ol>
+        </li>
+        <li>CloudFront wygenerował w tym momencie swój adres dostępowy <strong>dxxxxxxx.cloudfront.net</strong>, który można teraz ustawić jako rekord CNAME dla swojej domeny - tu <strong>cf.pieszynski.com</strong></li>
+        <li>Zaznaczamy nową dystrybucję i klikamy <strong>Distribution settings</strong> lub po prostu klikamy w ID dystrybucji</li>
+        <li>
+            <span>Przechodzimy na zakładkę <strong>Origins</strong> i klikamy <strong>Create origin</strong></span>
+            <ul>
+                <li>Origin Domain Name: klikamy w pole i wybieramy swój pojemnik S3 <strong>jakasnazwa.s3.amazonaws.com</strong></li>
+                <li>Origin Path: <strong>/cf-static</strong></li>
+                <li>Origin ID: <strong>s3CfStatic</strong></li>
+                <li><strong>Yes, create</strong></li>
+            </ul>
+        </li>
+        <li>
+            <span>Przechodzimy na zakładkę <strong>Behaviors</strong> i klikamy <strong>Create Behavior</strong></span>
+            <ul>
+                <li>Path Pattern: <strong>sta/*</strong></li>
+                <li>Origin: <strong>s3CfStatic</strong></li>
+                <li>Object Caching: <strong>Customize</strong></li>
+                <li>Minimum TTL: <strong>0</strong></li>
+                <li>Maximum TTL: <strong>60</strong></li>
+                <li>Default TTL: <strong>60</strong></li>
+                <li><strong>Create</strong></li>
+            </ul>
+        </li>
+        <li>Teraz należy poczekać aż dystrybucja zostanie opublikowana - będzie miała status <strong>Deployed</strong></li>
+    </ul>
+
+    <p>
+        Aby usługa CloudFront przekazywała serwerowi informację o państwie z którego pochodzi żądanie należy wskazać aby do zapytań był dołączany nagłówek <strong>CloudFront-Viewer-Country</strong>.
+    </p>
+
+    <h3>Test treści dynamicznych</h3>
+
+    <p>
+        Wyniki dla wejścia na stronę <strong>http://cf.pieszynski.com/</strong> z adresów w Polsce i USA.
+    </p>
+
+    <p>
+        Ścieżka widziana przez serwer - <strong>/initgo</strong> - wynika z ustawienia domyślnego <strong>Default Root Object</strong>. Docelowo pewnie znalazłby się tam wpis <strong>index.html</strong>.
+    </p>
+
+    %%%#code_bash^
+ubuntu@ip:~$ nodejs server.js
+2017-07-06T17:26:44.680Z >> url:/initgo, headers: {
+  'user-agent': 'Amazon CloudFront',
+  'x-forwarded-for': 'xxx.PL.IP.xxx',
+  'cloudfront-viewer-country': 'PL',
+  'x-pp-front': 'EC2_v1'
+  }
+2017-07-06T17:27:37.736Z >> url:/initgo, headers: {
+  'user-agent': 'Amazon CloudFront',
+  'x-forwarded-for': 'yyy.US.IP.yyy',
+  'cloudfront-viewer-country': 'US',
+  'x-pp-front': 'EC2_v1' 
+  }
+    #%%%
+
+    <p>
+        Za każdym razem nagłówek <strong>X-Cache</strong> ma wartość <strong>Miss from cloudfront</strong> czyli zawartość musiała być odświeżona z serwera źródłowego a na konsoli serwera WWW pojawiają się wpisy dla każdego wywołania.
+    </p>
+
+    %%%#code_bash^
+HTTP/1.1 200 OK
+Content-Length: 36
+Connection: keep-alive
+Cache-Control: no-cache, no-store, must-revalidate
+X-Cache: Miss from cloudfront
+Via: 1.1 zzz.cloudfront.net (CloudFront)
+    #%%%
+
+    <h3>Treści statyczne serwowane z S3</h3>
+
+    <p>
+        W tym przypadku należy zwrócić uwagę, że po skonfigurowaniu <strong>Path Pattern</strong> na <strong>sta/*</strong> CloudFront będzie używał podkatalogu <strong>cf-static/</strong> z wskazanego pojemnika dodając do niego <strong>CAŁĄ</strong> ścieżkę z adresu URL. Czyli dla adresu <strong>http://cf.pieszynski.com/sta/pol2.png</strong> plik musi znajdować się w katalogu bezwzględnym w S3 <strong>cf-static/sta/pol2.png</strong> a nie <span style="text-decoration: line-through;">cf-static/pol2.png</span>!
+    </p>
+
+    <p>
+        Wyniki dla wejścia na stronę <strong>http://cf.pieszynski.com/sta/pol2.png</strong>.
+    </p>
+
+    %%%#code_bash^
+HTTP/1.1 200 OK
+Content-Type: image/png
+ETag: "e0012d..."
+Server: AmazonS3
+X-Cache: Miss from cloudfront
+
+HTTP/1.1 304 Not Modified
+ETag: "e0012d..."
+Server: AmazonS3
+Age: 59
+X-Cache: Hit from cloudfront
+
+HTTP/1.1 304 Not Modified
+ETag: "e0012d..."
+Server: AmazonS3
+X-Cache: RefreshHit from cloudfront
+    #%%%
+
+    <ul>
+        <li>Za pierwszym razem obrazka nie było w lokalizacji brzegowej - <strong>Miss from cloudfront</strong> - dane zostały pobrane z pojemnika S3</li>
+        <li>Każde kolejne wywołanie przez 60 sekund zwraca plik z bufora CloudFront - <strong>Hit from cloudfront</strong> - podając jednocześnie wiek obiektu w buforze (Age) - 59 sekund</li>
+        <li>Pierwsze wywołanie starsze niż 60 sekund powoduje odświeżenie lokalizacji brzegowej z S3 - <strong>RefreshHit from cloudfront</strong></li>
+    </ul>
+
+    <h3>Problemy z komunikacją</h3>
+
+    <p>
+        Gdy CloudFront dostarcza dane z serwera WWW a ten w pewnym momencie przestanie odpowiadać to CloudFront serwuje dane z bufora przez kolejne pięć minut nie odpytując w tym czasie ani razu serwera WWW (niezależnie od tego co było ustawione w Cache-Control). Więcej informacji na ten temat w dokumentacji: <a href="http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/HTTPStatusCodes.html" target="_blank" rel="nofollow">How CloudFront Processes and Caches HTTP 4xx and 5xx Status Codes from Your Origin</a>
+    </p>
+
+    <h3>Pliki logów</h3>
+
+    %%%#code_bash^
+#Version: 1.0
+#Fields: date time x-edge-location sc-bytes c-ip cs-method cs(Host) cs-uri-stem sc-status cs(Referer) cs(User-Agent) cs-uri-query cs(Cookie) x-edge-result-type x-edge-request-id x-host-header cs-protocol cs-bytes time-taken x-forwarded-for ssl-protocol ssl-cipher x-edge-response-result-type cs-protocol-version
+2017-07-06  17:35:55    WAW50   361 xxx.xxx.xxx.xxx GET dxxxxxxx.cloudfront.net /   200 -   Mozilla/    -   -   Miss    ==  cf.pieszynski.com   http    407 0.088   -   -   -   Miss    HTTP/1.1
+2017-07-06  17:35:59    WAW50   361 xxx.xxx.xxx.xxx GET dxxxxxxx.cloudfront.net /   200 -   Mozilla/    -   -   Miss    ==  cf.pieszynski.com   http    433 0.053   -   -   -   Miss    HTTP/1.1
+2017-07-06  17:36:01    WAW50   361 xxx.xxx.xxx.xxx GET dxxxxxxx.cloudfront.net /   200 -   Mozilla/    -   -   Miss    ==  cf.pieszynski.com   http    433 0.114   -   -   -   Miss    HTTP/1.1
+    #%%%
+</div>
