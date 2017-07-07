@@ -21,6 +21,7 @@ var pg = require('./percentage.js');
     }
 
     var StandardTopicReplacements = {
+        ref_topic: function (k,v){},
         code: function(k,v) {
             var result = hljs.highlightAuto(v.trim());
             return '<pre><code class="hljs ' + result.language + '">' + result.value + '</code></pre>';
@@ -62,6 +63,21 @@ var pg = require('./percentage.js');
         return template;
     }
 
+    function getTopicUrl(pages, elem) {
+        return '/' + pages.pagesRoute + '/' + elem.name;
+    }
+
+    function buildRefTopicFn(pages) {
+        return function _refTopic(k,v) {
+            var page = pages.pages.filter(function _refTopicFilter(el) {
+                return el.name === v;
+            }).pop();
+            if (!page)
+                throw 'Nieznana referencja: ' + (v || '');
+            return '<a href="' + getTopicUrl(pages, page) + '">' + page.title + '</a>';
+        };
+    }
+
     function renderTemplate(template, replacements, dst) {
         if (!path.isAbsolute(dst)) {
             dst = path.normalize(path.join(__dirname, dst));
@@ -76,15 +92,17 @@ var pg = require('./percentage.js');
         StandardTemplateReplacements.title = pages.title;
         StandardTemplateReplacements.gohome = true;
 
+        StandardTopicReplacements.ref_topic = buildRefTopicFn(pages);
+
         pages.pages.forEach(function(elem) {
             var srcRelPage = path.normalize(path.join(pages.pagesPath, elem.name + '.html'));
             var dstTopic = path.normalize(path.join(pages.output, pages.pagesRoute, elem.name + '.html'));
             var elemTemplate = getTemplate(srcRelPage);
 
+            console.log('rendering', elem.name, 'to', dstTopic);
             StandardTemplateReplacements.body = elemTemplate(StandardTopicReplacements);
             StandardTemplateReplacements.name = elem.title;
             StandardTemplateReplacements.tagline = elem.description;
-            console.log('rendering', elem.name, 'to', dstTopic);
             renderTemplate(
                 template, 
                 StandardTemplateReplacements, 
@@ -97,7 +115,7 @@ var pg = require('./percentage.js');
         var dst = path.normalize(path.join(pages.output, 'index.html'));
 
         var body = pages.pages.map(function(elem) {
-            return '<a href="' + pages.pagesRoute + '/' + elem.name + '" class="topic-link">'
+            return '<a href="' + getTopicUrl(pages, elem) + '" class="topic-link">'
                 + '<div><h1>' + elem.title + '</h1>'
                 + '<p>' + elem.description + '</p></div>'
                 + '</a>'

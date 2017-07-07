@@ -8,7 +8,7 @@
 
     Dodatkowo jeśli bez spacji w środku znajduje się tekst zaraz po
     znaku rozpoczynającym %%%# i zakończony znakiem daszka ('^')
-    to będzie on określał typ treści np. "%%%#javascript_ var ... #%%%"
+    to będzie on określał typ treści np. "%%%#javascript^ var ... #%%%"
     typ treści to "javascript".
 
     .compile(text)
@@ -35,7 +35,7 @@
         parametry
         =========
 
-        text: 'ala %%%#body_#%%% kota w %%%#siersc_kropki#%%%'
+        text: 'ala %%%#body^#%%% kota w %%%#siersc^kropki#%%%'
 
         @result: (replacements) => {...}
 
@@ -57,7 +57,7 @@
         parametry
         =========
 
-        text: 'ala %%%#body_#%%% kota w %%%#siersc_kropki#%%%'
+        text: 'ala %%%#body^#%%% kota w %%%#siersc^kropki#%%%'
         
         @result: 
          [ { b: 25, e: 45, t: 'siersc', bin: 36, ein: 41 },
@@ -77,7 +77,7 @@
 
     function search(text) {
 
-        // text: 'ala %%%#body_#%%% kota w %%%#siersc_kropki#%%%'
+        // text: 'ala %%%#body^#%%% kota w %%%#siersc^kropki#%%%'
         //
         // @result: 
         //  [ { b: 25, e: 45, t: 'siersc', bin: 36, ein: 41 },
@@ -135,7 +135,7 @@
 
     function compile(text) {
 
-        // text: 'ala %%%#body_#%%% kota w %%%#siersc_kropki#%%%'
+        // text: 'ala %%%#body^#%%% kota w %%%#siersc^kropki#%%%'
         // layout:
         //  [ { b: 25, e: 45, t: 'siersc', bin: 36, ein: 41 },
         //    { b: 17, e: 24, t: 'text', bin: 17, ein: 24 },
