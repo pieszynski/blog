@@ -1,0 +1,319 @@
+<div>
+    <h1>AWS - autoskalowanie EC2<top-date>08.VII.2017</top-date></h1>
+
+    <h3>Przygotowanie komponentów</h3>
+
+    <p>
+        Należy przygotować dwie podsieci w różnych Availability Zone (AZ) w obrębie jednej sieci wirtualnej - w tym przypadku wygląda to tak:
+    </p>
+
+    <ul>
+        <li>VPC1_SUBb (subnet-f19d28b8, eu-west-1b) adresacja 10.0.1.0/24</li>
+        <li>VPC1_SUBc (subnet-037c9458, eu-west-1c) adresacja 10.0.2.0/24</li>
+    </ul>
+
+    <p>
+        Dodatkowo pomocny będzie poniższy skrypt (modyfikacja już kiedyż użytego w %%%#ref_topic^aws-cloudfront-cdn#%%%), który AWS użyje w procesie tworzenia nowej instancji maszyny tj. zostanie uruchomiony raz przy pierwszym starcie. Jego zadaniem przede wszystkim jest:
+    </p>
+
+    <ol>
+        <li>Instalacja NodeJs na maszynie</li>
+        <li>Uruchomienie mikro serwera WWW</li>
+    </ol>
+
+    <p><strong>UWAGA</strong> skrypty startowe muszą zaczynać się od ciągu <strong>#!</strong> i zawsze są wykonywane w kontekście użytkownika <strong>root</strong>. Gdyby coś poszło nie tak to logi startu są w pliku <i>/var/log/cloud-init-output.log</i></p>
+
+    %%%#code_bash^
+#!/bin/bash
+apt-get install nodejs -y
+iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-ports 1337
+cd /home/ubuntu
+echo "hello autoscaled!" > auto.txt
+
+cat >run_node.sh <<EOL
+#!/bin/bash
+nodejs /home/ubuntu/server.js 1337 &
+EOL
+
+cat >server.js <<EOL
+var os_hostname = require('os').hostname();
+var http = require('http');
+var app = http.createServer(function(req,res) {
+    if ('/favicon.ico' === req.url) {
+        res.statusCode = 404;
+        res.end();
+        return;
+    }
+
+    if ('/' === req.url || '/initgo' === req.url) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    }
+
+    var now = (new Date()).toISOString();
+    console.log(now, '>> url:', req.url);
+
+    res.statusCode = 200;
+    res.end(os_hostname + ': Teraz mamy: ' + now);
+});
+app.listen(process.argv[2] || 1337);
+EOL
+
+chown ubuntu:ubuntu run_node.sh
+chown ubuntu:ubuntu server.js
+
+sudo -u ubuntu sh /home/ubuntu/run_node.sh
+    #%%%
+
+    <p>
+        Dzięki niemu każdy z serwerów będzie zwracał dane jak niżej ale poprzedzone nazwą maszyny na której działa.
+    </p>
+
+    %%%#code_bash^ip-10-0-1-52: Teraz mamy: 2017-07-08T15:27:54.864Z#%%%
+
+    <h3>Konfiguracja startowa do autoskalowania</h3>
+
+    <ul>
+        <li>Auto scaling / Auto scaling groups</li>
+        <li>
+            <span>Create Auto Scaling group</span>
+            <ul>
+                <span>Create Launch Configuration</span>
+                <ul>
+                    <li>1. Choose AMI: <strong>Ubuntu Server</strong></li>
+                    <li>2. Choose Instance Type: <strong>t2.micro</strong></li>
+                    <li>
+                        <span>3. Configure details</span>
+                        <ul>
+                            <li>Name: <strong>VPC1_AUTO_CFG_v1</strong></li>
+                            <li>Advanced Details / User data: <strong>skrypt z poprzedniej sekcji</strong></li>
+                            <li>Advanced Details / IP Address Type: <strong>Assign a public IP address to every instance</strong></li>
+                        </ul>
+                    </li>
+                    <li>Pozostałe ustawienia wedle życzenia.</li>
+                </ul>
+            </ul>
+        </li>
+        <li>
+            <span>Create Auto Scaling group</span>
+            <ul>
+                <li>
+                    <span>1. Configure Auto Scaling group details</span>
+                    <ul>
+                        <li>Launch Configuration: <strong>VPC1_AUTO_CFG_v1</strong></li>
+                        <li>Group name: <strong>VPC1_AUTO_GRP1</strong></li>
+                        <li>Group size: <strong>Start with 1 instances</strong></li>
+                        <li>Network: <strong>VPC1</strong></li>
+                        <li>Subnet: <strong>VPC1_SUBb (subnet-f19d28b8, eu-west-1b), VPC1_SUBc (subnet-037c9458, eu-west-1c)</strong></li>
+                    </ul>
+                </li>
+                <li>2. Configure scaling policies: <strong>Keep this group at its initial size</strong></li>
+                <li>4. Configure Tags: Dobrze jest dodać tag np. "Group: AUTOGR" bo wszystkie nowe instancje będą go również dostawać</li>
+                <li>
+                    <span>5. Review</span>
+                    <ul>
+                        <li>Group name: <strong>VPC1_AUTO_GRP1</strong></li>
+                        <li>Group size: <strong>1</strong></li>
+                        <li>Minimum Group Size: <strong>1</strong></li>
+                        <li>Maximum Group Size: <strong>1</strong></li>
+                        <li>Subnet(s): <strong>subnet-f19d28b8,subnet-037c9458</strong></li>
+                        <li>Health Check Grace Period: <strong>300</strong></li>
+                        <li>Detailed Monitoring: <strong>Yes</strong></li>
+                        <li>Instance Protection: <strong>None</strong></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+    </ul>
+
+    <p>
+        W tym momencie w obrębie grupy autoskalowania powinna być uruchomiona jedna instancja EC2 najprawdopodobniej w strefie eu-west-1b.
+    </p>
+
+    <image-info info="Konsola aktywności - automatyczny start maszyny" src="/img/topic/aws-autoskalowanie/hand-terminated.png"></image-info>
+
+    <p>
+        Dla testu można zepsuć instancję na dwa poniższe sposoby i zobaczyć, że autoskaler stworzy nową instancję, i w dodatku w innym AZ.
+    </p>
+
+    <ul>
+        <li>klikamy w link z jej "Instance ID" i z opcji "Terminate"</li>
+        <li>logujemy się na maszynę jako root i wykonujemy "shutdown -h now"</li>
+    </ul>
+
+    <image-info info="Nowa instancja znalazła się w innym Availability Zone" src="/img/topic/aws-autoskalowanie/hand-terminated-new-zone.png"></image-info>
+
+    <h3>Load balancer - przygotowanie</h3>
+
+    <p>
+        Teraz należy dodać klasyczny wg. AWS load balancer, który będzie dzielił równomiernie ruch pomiędzy wszystkie maszyny w różnych AZ.
+    </p>
+
+    <ul>
+        <li>Load balancing / Load balancers</li>
+        <li>
+            <span>Create Load Balancer</span>
+            <ul>
+                <li>Load balancer type: Classic Load Balancer</li>
+                <li>
+                    <span>1. Define Load Balancer</span>
+                    <ul>
+                        <li>Load Balancer name: <strong>VPC1-LB</strong></li>
+                        <li>Create LB Inside: <strong>VPC1</strong></li>
+                        <li>Select Subnets: <strong>eu-west-1b, eu-west-1c</strong></li>
+                    </ul>
+                </li>
+                <li>2. Assign Security Groups: Select an existing security group</li>
+                <li>
+                    <span>4. Configure Health Check</span>
+                    <ul>
+                        <li>Ping Path: <strong>/health1</strong></li>
+                        <li>Response Timeout: <strong>5 seconds</strong></li>
+                        <li>Interval: <strong>30 seconds</strong></li>
+                        <li>Unhealthy threshold: <strong>2 (ile sprawdzeń)</strong></li>
+                        <li>Healthy threshold: <strong>10 (ile sprawdzeń)</strong></li>
+                    </ul>
+                </li>
+                <li>5. Add EC2 Instances: <strong>Nie zaznaczamy żadnej instancji</strong></li>
+                <li>
+                    <span>6. Add Tags</span>
+                    <ul>
+                        <li>Group: <strong>VPC1_LB_TAG</strong></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+    </ul>
+
+    <p>
+        Po stworzeniu instancji load balancera w zakładce "Description" dostaniemy informację o jego adresie, który należy później umieścić w rekordzie CNAME swojej domeny: <strong>VPC1-LB-544907824.eu-west-1.elb.amazonaws.com (A Record)</strong>.
+    </p>
+
+    <h3>Przypięcie load balancera do autoskalera</h3>
+
+    <p>
+        Przechodzimy do "Auto Scaling Groups: VPC1_AUTO_GRP1", zakładka "Details", przycisk "Edit" i ustawiamy następujące opcje:
+    </p>
+
+    <ul>
+        <li>Load Balancers: <strong>VPC1-LB</strong></li>
+        <li>Desired: <strong>2</strong></li>
+        <li>Min: <strong>1</strong></li>
+        <li>Max: <strong>3</strong></li>
+    </ul>
+
+    <p>
+        Po zapisaniu autoskaler stworzy 2 instancje EC2 na 3 możliwe maksymalnie. W ustawieniach load balancera VPC1-LB, w zakładce "Instances", po czasie "Status" na instancjach zmieni się na "InService".
+    </p>
+
+    <p>
+        Po wejściu na stronę: <strong>http://vpc1-lb-544907824.eu-west-1.elb.amazonaws.com/</strong> dostajemy na zmianę (patrząc na nazwy hostów):
+    </p>
+
+    %%%#code_bash^
+ip-10-0-1-52: Teraz mamy: 2017-07-08T16:06:13.011Z
+ip-10-0-2-55: Teraz mamy: 2017-07-08T16:06:07.102Z
+    #%%%
+
+    <p>
+        Zatrzymanie usługi na jednym z serwerów
+    </p>
+
+    %%%#code_bash^
+ubuntu@ip-10-0-1-52:~$ ps aux | grep node
+ubuntu    1954  0.0  2.4 944636 24528 ?        Sl   15:27   0:00 nodejs /home/ubuntu/server.js 1337
+ubuntu    2071  0.0  0.0  14992   984 pts/0    S+   16:07   0:00 grep --color=auto node
+ubuntu@ip-10-0-1-52:~$ kill 1954
+    #%%%
+
+    <p>
+        Powoduje, że w odpowiedziach pojawia się już tylko poniższa treść a instancja na load balancerze dostaje Status: <strong>OutOfService</strong> (<i>Instance has failed at least the UnhealthyThreshold number of health checks consecutively.</i>)
+    </p>
+
+    %%%#code_bash^
+ip-10-0-2-55: Teraz mamy: 2017-07-08T16:08:38.678Z
+    #%%%
+
+    <p>
+        Mimo ponownego uruchomienia usługi WWW (serwer ubuntu działał cały czas) load balancer nie przekierowuje na niego ruchu, pomimo poprawnych odpowiedzi o statusie usługi.
+    </p>
+
+    %%%#code_bash^
+ubuntu@ip-10-0-1-52:~$ nodejs /home/ubuntu/server.js 1337
+2017-07-08T16:10:23.131Z >> url: /health1
+2017-07-08T16:10:28.313Z >> url: /health1
+2017-07-08T16:10:53.125Z >> url: /health1
+2017-07-08T16:10:58.312Z >> url: /health1
+2017-07-08T16:11:23.125Z >> url: /health1
+2017-07-08T16:11:28.313Z >> url: /health1
+2017-07-08T16:11:53.127Z >> url: /health1
+2017-07-08T16:11:58.314Z >> url: /health1
+2017-07-08T16:12:23.124Z >> url: /health1
+2017-07-08T16:12:28.315Z >> url: /health1
+2017-07-08T16:12:53.124Z >> url: /health1
+2017-07-08T16:12:58.315Z >> url: /health1
+2017-07-08T16:13:23.124Z >> url: /health1
+2017-07-08T16:13:28.316Z >> url: /health1
+2017-07-08T16:13:53.128Z >> url: /health1
+2017-07-08T16:13:58.312Z >> url: /health1
+2017-07-08T16:14:23.125Z >> url: /health1
+2017-07-08T16:14:28.310Z >> url: /health1
+2017-07-08T16:14:53.124Z >> url: /health1
+2017-07-08T16:14:58.308Z >> url: /health1
+2017-07-08T16:15:00.583Z >> url: /
+2017-07-08T16:15:01.097Z >> url: /
+2017-07-08T16:15:01.530Z >> url: /
+2017-07-08T16:15:01.848Z >> url: /
+2017-07-08T16:15:04.642Z >> url: /
+2017-07-08T16:15:10.247Z >> url: /lolz
+2017-07-08T16:15:23.124Z >> url: /health1
+2017-07-08T16:15:28.307Z >> url: /health1
+    #%%%
+
+    <p>
+        Dopiero po 10 minutach pojawia się jedno z pierwszych przekierowań na ponownie przywróconą do życia usługę WWW.
+    </p>
+
+    %%%#code_bash^
+ip-10-0-1-52: Teraz mamy: 2017-07-08T16:15:10.247Z
+    #%%%
+
+    <p>
+        To samo widać w wykresie monitoringu dostępności poprawnych instancji.
+    </p>
+
+    <image-info info="Liczba dostępnych dla load balancera instancji" src="/img/topic/aws-autoskalowanie/lb-healthy.png"></image-info>
+
+    <h3>Przykład - automatyczne zwiększanie ilości instancji</h3>
+
+    <p>
+        Aby automatycznie zwiększała się liczba instancji w autoskalerze na podstawie danych z load balancera postępujemy następująco.
+    </p>
+
+    <ol>
+        <li>
+            <span>W load balancerze <strong>VPC1-LB</strong> ustawiamy nowy alarm dot. istnienia nieprzydatnych hostów</span>
+            <ul>
+                <li>Whenever: <strong>Average of Unhealthy Hosts</strong></li>
+                <li>Is: <strong>&gt;= 1</strong></li>
+                <li>For at least: <strong>1 consecutive period(s) of 1 Minute</strong></li>
+                <li>Name of alarm: <strong>LB-ALARM-Unhealthy-Hosts</strong></li>
+            </ul>
+        </li>
+        <li>
+            <span>W grupie autoskalowania <strong>VPC1_AUTO_GRP1</strong>, zakładka "Scaling Policies" klikamy "Add policy"</span>
+            <ul>
+                <li>Klikamy link <strong>Create a simple scaling policy</strong></li>
+                <li>Name: <strong>LB_SCALE_UP</strong></li>
+                <li>Execute policy when: <strong>LB-ALARM-Unhealthy-Hosts</strong></li>
+                <li>Take the action: <strong>Add 1 instances</strong></li>
+                <li>Instances need: <strong>30 seconds to warm up after each step</strong></li>
+            </ul>
+        </li>
+    </ol>
+
+    <p>
+        Teraz, po zatrzymaniu usługi WWW na jednym z serwerów po wystąpieniu alarmu (trochę ponad minutę) zostanie dołożona nowa instancja do puli autoskalera co ładnie widać w logu
+    </p>
+
+    <image-info info="Powołanie nowej instancji na podstawie alarmu w load balancerze" src="/img/topic/aws-autoskalowanie/lb-up-alarm.png"></image-info>
+</div>

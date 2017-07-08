@@ -15,6 +15,12 @@
     },
     "pages" : [
         {
+            "name" : "aws-autoskalowanie",
+            "title" : "AWS - autoskalowanie EC2",
+            "description" : "AWS autoskalowanie EC2 i dzielenie ruchu",
+            "date" : "2017-07-08"
+        },
+        {
             "name" : "aws-cloudfront-cdn",
             "title" : "AWS CloudFront CDN",
             "description" : "AWS - dostarczanie treści za pomocą CloudFront",
