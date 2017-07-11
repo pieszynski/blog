@@ -34,6 +34,10 @@ var pg = require('./percentage.js');
             var result = hljs.highlight('javascript', v.trim());
             return '<pre><code class="hljs javascript">' + result.value + '</code></pre>';
         },
+        code_java: function(k,v) {
+            var result = hljs.highlight('java', v.trim());
+            return '<pre><code class="hljs java">' + result.value + '</code></pre>';
+        },
         code_ts: function(k,v) {
             var result = hljs.highlight('javascript', v.trim());
             return '<pre><code class="hljs javascript">' + result.value + '</code></pre>';
