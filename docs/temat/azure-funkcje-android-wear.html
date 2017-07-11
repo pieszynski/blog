@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pieszyński Blog - pieszynski.com</title>
+
+    <link href="/favicon.png" rel="shortcut icon" />
+    <link href="/favicon.png" rel="icon" />
+
+    <!--<link href="/feed.rss" rel="alternate" type="application/rss+xml" title="pieszynski.com - co nowego?" />-->
+    <meta name="theme-color" content="#157878" />
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700" rel="stylesheet" />
+    <link href="/css/cayman.css" rel="stylesheet" />
+    <link href="/css/highlight.min.css" rel="stylesheet" />
+    <link href="/css/style.css" rel="stylesheet" />
+
+    <script type="text/javascript" src="/js/vendor/jquery.min.js"></script>
+    <script type="text/javascript" src="/js/vendor/angular.min.js"></script>
+    <script type="text/javascript" src="/js/vendor/underscore-min.js"></script>
+    <script type="text/javascript" src="/js/vendor/underscore.string.min.js"></script>
+    <script type="text/javascript" src="/js/layout.js"></script>
+    <script type="text/javascript" src="/js/menuCtrl.js"></script>
+</head>
+<body ng-app="appRoot" ng-controller="rootCtrl as root">
+    <section class="page-header">
+        
+        <h1 class="project-name">Azure: Funkcje i Android Wear</h1>
+        <h2 class="project-tagline">Integracja Azure Functions z zegarkiem z Android Wear 2.0</h2>
+
+        <!--<a href="https://github.com/pages-themes/cayman" class="btn">View on GitHub</a>-->   
+
+        <div class="menu-btn-hook" ng-controller="menuCtrl as menu">
+            <div class="menu-btn menu-btn-main menu-btn-shadow" ng-click="menu.toggle()">
+                <div>i</div>
+            </div>
+            <div class="menu-btn menu-btn-sub" ng-click="menu.close()">
+                <a href="/"><div>&#8592;</div></a>
+            </div>
+        </div>
+    </section>
+    <section class="main-content">
+        <div>
+    <h1>Azure: Funkcje i Android Wear<top-date>11.VII.2017</top-date></h1>
+    
+    <h3>Wstęp</h3>
+
+    <p>
+        Celem było zalogowanie aktywności podczas snu dlatego od razu na myśl przyszedł zegarek z systemem Android Wear. Ponieważ jednak aby pobrać dane z zegarka trzeba się trochę namęczyć (czyt. ADB) dlatego najwygodniejszym rozwiązaniem było wysyłanie danych na bieżąco do chmury. Sam zegarek jeśli posiada WiFi to zostanie ono użyte a gdyby zniknęło (brak połączenia) zegarek potrafi korzystać z danych pakietowych sparowanego telefonu.
+    </p>
+
+    <p>
+        Jeśli chodzi o część chmurową to nastąpił czas na sprawdzenie co oferują nowe, bezserwerowe aplikacje - funkcje w chmurze.
+    </p>
+
+    <h3>Przygotowanie - SQL Server</h3>
+
+    <p>
+        Po założeniu nowej bazy danych w obrębie SQL Servera portal Azure generuje Connection String po kliknięciu w link <i>Show database connection strings</i>
+    </p>
+
+    <pre><code class="hljs bash">Server=tcp:nazwa_serwera.database.windows.net,1433;Initial Catalog=docelowa_baza;Persist Security Info=False;User ID={your_username};Password={your_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;</code></pre>
+
+    <p>
+        Gdzie należy pozamieniać wpisy <strong>{your_username}</strong> i <strong>{your_password}</strong> na swoje.
+    </p>
+
+    <p>
+        Ponieważ portal nie pozwala na dodanie nowego użytkownika - należy tą operację wykonać z poziomu np SSMS (Sql Server Management Studio)
+    </p>
+
+    <pre><code class="hljs bash">-- baza [master]
+CREATE LOGIN db_login WITH password=<span class="hljs-string">'db_password'</span>;
+
+-- baza [docelowa_baza]
+CREATE USER db_login FROM LOGIN db_login;
+EXEC sp_addrolemember <span class="hljs-string">'db_datareader'</span>, <span class="hljs-string">'db_login'</span>;
+EXEC sp_addrolemember <span class="hljs-string">'db_datawriter'</span>, <span class="hljs-string">'db_login'</span>;</code></pre>
+
+    <p>
+        Dalej należy przygotować tabelę docelową gdzie będą przechowywane wyniki.
+    </p>
+
+    <pre><code class="hljs bash">CREATE TABLE [dbo].[SenData]
+(
+    [Id] INT NOT NULL PRIMARY KEY identity(1,1),
+    [Now] DateTime not null default (getdate()),
+    [X] Float not null,
+    [Y] Float not null,
+    [Z] Float not null
+)</code></pre>
+
+    <h3>Funkcja Azure</h3>
+
+    <p>
+        Najpierw dodajemy tzw. aplikację funkcyjną (<strong>Function App</strong>), która jest kontenerem wszystkich funkcji, które w obrębie tej aplikacji dodamy. Główną zaletą tego typu aplikacji (w stosunku do web aplikacji) jest to, że plan hostingowy można ustawić na tryb <strong>Consumption Plan</strong> czyli płacimy tylko za czas wykonywania funkcji liczony w milisekundach i zajętości pamięci - szczegóły pod adresem <a href="https://azure.microsoft.com/pl-pl/pricing/details/functions/" target="_blank" rel="nofollow">Functions - cennik</a>.
+    </p>
+
+    <p>
+        Web aplikacje działają tak na prawdę o zdefiniowane z góry zasoby na maszynach, za które trzeba płacić mimo iż nie wykorzystuje się ich w całości - <strong>App Service Plan</strong>. Przy funkcjach działamy bezserwerowo - z punktu widzenia użytkownika sprzęt na którym funkcja się wywołuje nie ma znaczenia.
+    </p>
+
+    <p>
+        Azure darmowo w ramach planu konsumpcyjnego daje cyt. <i>"miesięczny bezpłatny przydział 1 mln żądań i 400 000 GB-s użycia zasobów miesięcznie"</i> na dzień 11.VII.2017.
+    </p>
+
+    <p>
+        W konfiguracji całej aplikacji funkcyjnej dodajemy Connection String do bazy danych: <strong>Aplikacja - Platform features - Application settings</strong> i potem sekcja <strong>Connection strings</strong> gdzie należy dodać nowy wpis o kluczu <strong>docelowa_baza</strong>.
+    </p>
+
+    <image-info info="Platform features" src="/img/topic/azure-funkcje-android-wear/fn-settings.png"></image-info>
+
+    <p>
+        Teraz należy stworzyć nową funkcję o nazwie <strong>moja_funkcja</strong> na podstawie podstawowego szablonu <strong>HttpTrigger - C#</strong> i nadpisać jej zawartość poniższym kodem
+    </p>
+
+    <pre><code class="hljs cs"><span class="hljs-meta">#r "System.Configuration"</span>
+<span class="hljs-meta">#r "System.Data"</span>
+<span class="hljs-keyword">using</span> System.Net;
+<span class="hljs-keyword">using</span> System.Data.SqlClient;
+<span class="hljs-keyword">using</span> System.Configuration;
+
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">async</span> Task&lt;HttpResponseMessage&gt; <span class="hljs-title">Run</span>(<span class="hljs-params">HttpRequestMessage req, TraceWriter log</span>)
+</span>{
+    <span class="hljs-comment">// request body</span>
+    <span class="hljs-keyword">dynamic</span> data = <span class="hljs-keyword">await</span> req.Content.ReadAsAsync&lt;<span class="hljs-keyword">object</span>&gt;();
+
+    <span class="hljs-keyword">string</span> mode = data?.m;
+    <span class="hljs-keyword">string</span> s_x = data?.x;
+    <span class="hljs-keyword">string</span> s_y = data?.y;
+    <span class="hljs-keyword">string</span> s_z = data?.z;
+    <span class="hljs-keyword">string</span> s_d = data?.d;
+
+    <span class="hljs-keyword">float</span> x;
+    <span class="hljs-keyword">float</span>.TryParse(s_x?.Replace(<span class="hljs-string">","</span>,<span class="hljs-string">"."</span>), <span class="hljs-keyword">out</span> x);
+    <span class="hljs-keyword">float</span> y;
+    <span class="hljs-keyword">float</span>.TryParse(s_y?.Replace(<span class="hljs-string">","</span>,<span class="hljs-string">"."</span>), <span class="hljs-keyword">out</span> y);
+    <span class="hljs-keyword">float</span> z;
+    <span class="hljs-keyword">float</span>.TryParse(s_z?.Replace(<span class="hljs-string">","</span>,<span class="hljs-string">"."</span>), <span class="hljs-keyword">out</span> z);
+    DateTime d;
+    <span class="hljs-keyword">bool</span> hasDate = DateTime.TryParse(s_d, <span class="hljs-keyword">out</span> d);
+
+    log.Info(<span class="hljs-string">$"(x,y,z)=(<span class="hljs-subst">{x}</span>,<span class="hljs-subst">{y}</span>,<span class="hljs-subst">{z}</span>)"</span>);
+
+    <span class="hljs-keyword">if</span> (<span class="hljs-string">"+"</span> == mode) {
+        <span class="hljs-keyword">var</span> str = ConfigurationManager.ConnectionStrings[<span class="hljs-string">"docelowa_baza"</span>].ConnectionString;
+        <span class="hljs-keyword">using</span> (SqlConnection conn = <span class="hljs-keyword">new</span> SqlConnection(str))
+        {
+            conn.Open();
+            <span class="hljs-keyword">var</span> text = hasDate
+                ? <span class="hljs-string">"insert into [dbo].[SenData] (Now,X,Y,Z) values (@d,@x,@y,@z);"</span> 
+                : <span class="hljs-string">"insert into [dbo].[SenData] (X,Y,Z) values (@x,@y,@z);"</span>;
+
+            <span class="hljs-keyword">using</span> (SqlCommand cmd = <span class="hljs-keyword">new</span> SqlCommand(text, conn))
+            {
+                <span class="hljs-keyword">if</span> (hasDate)
+                    cmd.Parameters.Add(<span class="hljs-keyword">new</span> SqlParameter(<span class="hljs-string">"@d"</span>,d));
+                cmd.Parameters.Add(<span class="hljs-keyword">new</span> SqlParameter(<span class="hljs-string">"@x"</span>,x));
+                cmd.Parameters.Add(<span class="hljs-keyword">new</span> SqlParameter(<span class="hljs-string">"@y"</span>,y));
+                cmd.Parameters.Add(<span class="hljs-keyword">new</span> SqlParameter(<span class="hljs-string">"@z"</span>,z));
+
+                <span class="hljs-keyword">var</span> rows = <span class="hljs-keyword">await</span> cmd.ExecuteNonQueryAsync();
+                log.Info(<span class="hljs-string">$"<span class="hljs-subst">{rows}</span> rows were updated"</span>);
+            }
+        }
+    }
+
+    <span class="hljs-keyword">return</span> <span class="hljs-string">"+"</span> != mode
+        ? req.CreateResponse(HttpStatusCode.BadRequest, <span class="hljs-string">"Go away robot!"</span>)
+        : req.CreateResponse(HttpStatusCode.OK, <span class="hljs-string">"Saved"</span>);
+}</code></pre>
+
+    <p>
+        Powyższa funkcja działa w ten sposób, że przyjmuje JSONa w postaci
+    </p>
+
+    <pre><code class="hljs json">{
+  <span class="hljs-attr">"m"</span>: <span class="hljs-string">"+"</span>,
+  <span class="hljs-attr">"x"</span>: <span class="hljs-string">"0,914585"</span>,
+  <span class="hljs-attr">"y"</span>: <span class="hljs-string">"-1,034295"</span>,
+  <span class="hljs-attr">"z"</span>: <span class="hljs-string">"9,524135"</span>,
+  <span class="hljs-attr">"d"</span>: <span class="hljs-string">"2017-07-11 12:43:00"</span>
+}</code></pre>
+
+    <p>którego zawartość jest zapisywana do bazy danych. Niepodanie parametru <strong>d</strong> czyli daty odczytu spowoduje automatycznym nadaniem daty przez bazę danych.</p>
+
+    <p>
+        Przechodzimy na zakładkę <strong>Integrate</strong> i upewniamy się, że pole <strong>Authorization level</strong> ma wartość <strong>Function</strong>.
+    </p>
+
+    <p>
+        Na zakładce <strong>Manage</strong> pobieramy klucz dostępowy (default) lub generujemy nowy.
+    </p>
+
+    <image-info info="Klucze autoryzacyjne" src="/img/topic/azure-funkcje-android-wear/fn-keys.png"></image-info>
+
+    <p>
+        Wracamy do definicji funkcji <strong>moja_funkcja</strong> i pobieramy jej URL klikając w link <strong>&lt;/&gt; Get function URL</strong>
+    </p>
+
+    <p>
+        Azure podpowiada całe wywołanie z podaniem klucza jako parametr całego adresu ale w tym przykładzie klucz autoryzacyjny zostanie przekazany przez nagłówek <strong>x-functions-key</strong>. URL, który będzie użyty powinien wyglądać mniej więcej następująco:
+    </p>
+
+    <pre><code class="hljs bash">https://aplikacja_fn.azurewebsites.net/api/moja_funkcja</code></pre>
+
+    <h3>Android Wear - tarcza zegarka</h3>
+
+    <p>
+        Dlaczego tarcza zegarka? W raz z pojawieniem się wersji systemu Android Wear 2.0, Google położyło przede wszystkim nacisk na możliwo szybkiej zmiany tarczy zegarka - gest przesuwania prawo-lewo. Dlatego jeśli zegarek ma logować do chmury to zmieniamy tarczę na logującą a jeżeli ma nie logować - wracamy do podstawowej. Wystarczą dwa proste ruchy palcem.
+    </p>
+
+    <p>
+        <strong>UWAGA</strong> Preferowanym systemem jest Android Wear w wersji 2.0, który pozwala na instalowanie aplikacji niezależnie od telefonu.
+    </p>
+
+    <p>
+        Używając Android Studio tworzymy nową aplikację tylko na zegarki - <strong>Wear</strong>. Z dostępnych początkowo szablonów wybieramy tarczę zegarka - <strong>Watch Face</strong>.
+    </p>
+
+    <p>
+        Po tym jak Android Studio wygeneruje wszystkie klasy znajdujemy dziedziczącą z <strong>CanvasWatchFaceService.Engine</strong> ponieważ chodzi o metodę <strong>onTimeTick()</strong>
+    </p>
+
+    <pre><code class="hljs java"><span class="hljs-meta">@Override</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">onTimeTick</span><span class="hljs-params">()</span> </span>{
+    <span class="hljs-keyword">super</span>.onTimeTick();
+    invalidate();
+
+    <span class="hljs-comment">// wykonanie własnej metody</span>
+    saveSensorDataToCloud();
+}</code></pre>
+
+    <p>
+        Metoda <strong>onTimeTick()</strong> jest idealna do użycia ponieważ póki tarcza jest wyświetlana (widoczna) mamy pewność, że jest ona wykonywana co najmniej raz na minutę po to aby zegarek zaktualizował wyświetlaną godzinę. Częstsze jej użycie następuje wtedy gdy zegarek przechodzi z trybu aktywnego do trybu działania w tle i na odwrót - słowem gdy tarcza zegarka jest dotykana przez użytkownika.
+    </p>
+
+    <p>
+        Nie wdając się w szczegóły implementacji tarczy wysłanie danych z akcelerometru, korzystając z biblioteki <a href="http://square.github.io/okhttp/">Ok Http</a> metodą POST do chmury wygląda w następujący sposób:
+    </p>
+
+    <pre><code class="hljs java"><span class="hljs-keyword">final</span> MediaType JSON = MediaType.parse(<span class="hljs-string">"application/json"</span>);
+<span class="hljs-keyword">final</span> OkHttpClient client = <span class="hljs-keyword">new</span> OkHttpClient();
+
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">post</span><span class="hljs-params">(String json)</span></span>{
+    <span class="hljs-keyword">try</span> {
+        Log.v(<span class="hljs-string">"__WAA_RQ__"</span>, <span class="hljs-string">"Data: "</span> + json);
+
+        RequestBody body = RequestBody.create(JSON, json);
+        Request request = <span class="hljs-keyword">new</span> Request.Builder()
+                .url(<span class="hljs-string">"https://aplikacja_fn.azurewebsites.net/api/moja_funkcja"</span>)
+                .header(
+                        <span class="hljs-string">"x-functions-key"</span>,
+                        <span class="hljs-string">"heO/h2byLyadP3sTx/oWrv2PPbMCFWdVJVHlo7qDgabIp1bzUTmKlg=="</span>
+                )
+                .post(body)
+                .build();
+
+        Response response = client.newCall(request).execute();
+        <span class="hljs-keyword">boolean</span> isOk = response.isSuccessful();
+        String resBody = response.body().string();
+
+        Log.v(<span class="hljs-string">"__WAA_RE__"</span>, isOk + <span class="hljs-string">": "</span> + resBody);
+    } <span class="hljs-keyword">catch</span> (IOException iex) {
+        Log.e(<span class="hljs-string">"__WAA_E__"</span>, <span class="hljs-string">"Cannot send to URL!"</span>, iex);
+    }
+}</code></pre>
+
+    <h3>Android Wear - wrzucanie aplikacji na zegarek</h3>
+
+    <p>
+        Aby móc wrzucić aplikację na zegarek należy najpierw na zegarku w ustawieniach deweloperskich zezwolić na debuggowanie przez WiFi.
+        <strong>UWAGA</strong> po przełączeniu tej opcji adres IP pojawia się po dłuższej chwili.
+    </p>
+
+    <image-info info="Włączenie debuggowania po WiFi" src="/img/topic/azure-funkcje-android-wear/dbg.png"></image-info>   
+
+    <p>
+        Teraz należy ADB połączyć do zegarka
+    </p>
+
+    <pre><code class="hljs bash"><span class="hljs-comment"># podłączenie ADB do zegarka</span>
+\&gt; adb.exe connect 192.168.1.104
+
+<span class="hljs-comment"># wykonanie zrzutu ekranu (podane jako ciekawostka)</span>
+\&gt; adb.exe shell screencap -p /sdcard/s.png
+\&gt; adb.exe pull -p /sdcard/s.png
+\&gt; adb.exe shell rm /sdcard/s.png</code></pre>
+
+    <p>
+        Ponieważ polecenie <strong>Run 'app'</strong> w Android Studio nie działa ze względu na brak startowego Activity należy z menu <strong>Run - Edit configurations...</strong> wybrać opcję <strong>Launch Options: Launch: Nothing</strong>
+    </p>
+
+    <image-info info="Ustawienia startowe Android Studio" src="/img/topic/azure-funkcje-android-wear/studio-run.png"></image-info>  
+
+    <h3>Działanie</h3>
+
+    <p>
+        Teraz w ADB Logcat mogą pojawić się co minutę następujące wpisy
+    </p>
+
+    <pre><code class="hljs bash"><span class="hljs-comment"># nie podano (prawidłowego) klucza autoryzacji</span>
+V/__WAA_RQ__: Data: {<span class="hljs-string">"m"</span>:<span class="hljs-string">"+"</span>, ...}
+V/__WAA_RE__: <span class="hljs-literal">false</span>:
+
+<span class="hljs-comment"># nie ustawiono (prawidłowego) parametru "m"/"mode"</span>
+V/__WAA_RQ__: Data: {<span class="hljs-string">"m"</span>:<span class="hljs-string">"?"</span>, ...}
+V/__WAA_RE__: <span class="hljs-literal">false</span>: <span class="hljs-string">"Go away robot!"</span>
+
+<span class="hljs-comment"># ok</span>
+V/__WAA_RQ__: Data: {<span class="hljs-string">"m"</span>:<span class="hljs-string">"+"</span>,<span class="hljs-string">"x"</span>:<span class="hljs-string">"0,972046"</span>,<span class="hljs-string">"y"</span>:<span class="hljs-string">"-1,101333"</span>,<span class="hljs-string">"z"</span>:<span class="hljs-string">"9,634268"</span>,<span class="hljs-string">"d"</span>:<span class="hljs-string">"2017-07-11 12:46:09"</span>}
+V/__WAA_RE__: <span class="hljs-literal">true</span>: <span class="hljs-string">"Saved"</span></code></pre>
+
+    <p>
+        Jednak tylko w ostatnim przypadku, gdy wszystko zostało poprawnie skonfigurowane w portalu Azure w logach funkcji pojawi się następujący wpis
+    </p>
+
+    <pre><code class="hljs bash">Welcome, you are now connected to <span class="hljs-built_in">log</span>-streaming service.
+Function started (Id=f92fd230-5283-4c3c-901c-bdbe6c37989f)
+(x,y,z)=(0.972046,-1.101333,9.634268)
+1 rows were updated
+Function completed (Success, Id=f92fd230-5283-4c3c-901c-bdbe6c37989f, Duration=0ms)</code></pre>
+
+    <h3>Dane zebrane w tabeli</h3>
+
+    <p>
+        Po nocy działania na ręku z tabeli znalazły się takie dane
+    </p>
+
+    <image-info info="Zalogowane dane" src="/img/topic/azure-funkcje-android-wear/sqld.png"></image-info> 
+
+    <p>
+        Teraz już tylko pozostaje kwestia analizy danych...
+    </p>
+
+</div>
+    </section>
+</body>
+</html>

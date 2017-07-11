@@ -15,6 +15,12 @@
     },
     "pages" : [
         {
+            "name" : "azure-funkcje-android-wear",
+            "title" : "Azure: Funkcje i Android Wear",
+            "description" : "Integracja Azure Functions z zegarkiem z Android Wear 2.0",
+            "date" : "2017-07-11"
+        },
+        {
             "name" : "aws-autoskalowanie",
             "title" : "AWS - autoskalowanie EC2",
             "description" : "AWS autoskalowanie EC2 i dzielenie ruchu",

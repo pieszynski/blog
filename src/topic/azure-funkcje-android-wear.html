@@ -1,0 +1,316 @@
+<div>
+    <h1>Azure: Funkcje i Android Wear<top-date>11.VII.2017</top-date></h1>
+    
+    <h3>Wstęp</h3>
+
+    <p>
+        Celem było zalogowanie aktywności podczas snu dlatego od razu na myśl przyszedł zegarek z systemem Android Wear. Ponieważ jednak aby pobrać dane z zegarka trzeba się trochę namęczyć (czyt. ADB) dlatego najwygodniejszym rozwiązaniem było wysyłanie danych na bieżąco do chmury. Sam zegarek jeśli posiada WiFi to zostanie ono użyte a gdyby zniknęło (brak połączenia) zegarek potrafi korzystać z danych pakietowych sparowanego telefonu.
+    </p>
+
+    <p>
+        Jeśli chodzi o część chmurową to nastąpił czas na sprawdzenie co oferują nowe, bezserwerowe aplikacje - funkcje w chmurze.
+    </p>
+
+    <h3>Przygotowanie - SQL Server</h3>
+
+    <p>
+        Po założeniu nowej bazy danych w obrębie SQL Servera portal Azure generuje Connection String po kliknięciu w link <i>Show database connection strings</i>
+    </p>
+
+    %%%#code_bash^
+Server=tcp:nazwa_serwera.database.windows.net,1433;Initial Catalog=docelowa_baza;Persist Security Info=False;User ID={your_username};Password={your_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;
+    #%%%
+
+    <p>
+        Gdzie należy pozamieniać wpisy <strong>{your_username}</strong> i <strong>{your_password}</strong> na swoje.
+    </p>
+
+    <p>
+        Ponieważ portal nie pozwala na dodanie nowego użytkownika - należy tą operację wykonać z poziomu np SSMS (Sql Server Management Studio)
+    </p>
+
+    %%%#code_bash^
+-- baza [master]
+CREATE LOGIN db_login WITH password='db_password';
+
+-- baza [docelowa_baza]
+CREATE USER db_login FROM LOGIN db_login;
+EXEC sp_addrolemember 'db_datareader', 'db_login';
+EXEC sp_addrolemember 'db_datawriter', 'db_login';
+    #%%%
+
+    <p>
+        Dalej należy przygotować tabelę docelową gdzie będą przechowywane wyniki.
+    </p>
+
+    %%%#code_bash^
+CREATE TABLE [dbo].[SenData]
+(
+    [Id] INT NOT NULL PRIMARY KEY identity(1,1),
+    [Now] DateTime not null default (getdate()),
+    [X] Float not null,
+    [Y] Float not null,
+    [Z] Float not null
+)
+    #%%%
+
+    <h3>Funkcja Azure</h3>
+
+    <p>
+        Najpierw dodajemy tzw. aplikację funkcyjną (<strong>Function App</strong>), która jest kontenerem wszystkich funkcji, które w obrębie tej aplikacji dodamy. Główną zaletą tego typu aplikacji (w stosunku do web aplikacji) jest to, że plan hostingowy można ustawić na tryb <strong>Consumption Plan</strong> czyli płacimy tylko za czas wykonywania funkcji liczony w milisekundach i zajętości pamięci - szczegóły pod adresem <a href="https://azure.microsoft.com/pl-pl/pricing/details/functions/" target="_blank" rel="nofollow">Functions - cennik</a>.
+    </p>
+
+    <p>
+        Web aplikacje działają tak na prawdę o zdefiniowane z góry zasoby na maszynach, za które trzeba płacić mimo iż nie wykorzystuje się ich w całości - <strong>App Service Plan</strong>. Przy funkcjach działamy bezserwerowo - z punktu widzenia użytkownika sprzęt na którym funkcja się wywołuje nie ma znaczenia.
+    </p>
+
+    <p>
+        Azure darmowo w ramach planu konsumpcyjnego daje cyt. <i>"miesięczny bezpłatny przydział 1 mln żądań i 400 000 GB-s użycia zasobów miesięcznie"</i> na dzień 11.VII.2017.
+    </p>
+
+    <p>
+        W konfiguracji całej aplikacji funkcyjnej dodajemy Connection String do bazy danych: <strong>Aplikacja - Platform features - Application settings</strong> i potem sekcja <strong>Connection strings</strong> gdzie należy dodać nowy wpis o kluczu <strong>docelowa_baza</strong>.
+    </p>
+
+    <image-info info="Platform features" src="/img/topic/azure-funkcje-android-wear/fn-settings.png"></image-info>
+
+    <p>
+        Teraz należy stworzyć nową funkcję o nazwie <strong>moja_funkcja</strong> na podstawie podstawowego szablonu <strong>HttpTrigger - C#</strong> i nadpisać jej zawartość poniższym kodem
+    </p>
+
+    %%%#code_cs^
+#r "System.Configuration"
+#r "System.Data"
+using System.Net;
+using System.Data.SqlClient;
+using System.Configuration;
+
+public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, TraceWriter log)
+{
+    // request body
+    dynamic data = await req.Content.ReadAsAsync<object>();
+
+    string mode = data?.m;
+    string s_x = data?.x;
+    string s_y = data?.y;
+    string s_z = data?.z;
+    string s_d = data?.d;
+
+    float x;
+    float.TryParse(s_x?.Replace(",","."), out x);
+    float y;
+    float.TryParse(s_y?.Replace(",","."), out y);
+    float z;
+    float.TryParse(s_z?.Replace(",","."), out z);
+    DateTime d;
+    bool hasDate = DateTime.TryParse(s_d, out d);
+
+    log.Info($"(x,y,z)=({x},{y},{z})");
+
+    if ("+" == mode) {
+        var str = ConfigurationManager.ConnectionStrings["docelowa_baza"].ConnectionString;
+        using (SqlConnection conn = new SqlConnection(str))
+        {
+            conn.Open();
+            var text = hasDate
+                ? "insert into [dbo].[SenData] (Now,X,Y,Z) values (@d,@x,@y,@z);" 
+                : "insert into [dbo].[SenData] (X,Y,Z) values (@x,@y,@z);";
+
+            using (SqlCommand cmd = new SqlCommand(text, conn))
+            {
+                if (hasDate)
+                    cmd.Parameters.Add(new SqlParameter("@d",d));
+                cmd.Parameters.Add(new SqlParameter("@x",x));
+                cmd.Parameters.Add(new SqlParameter("@y",y));
+                cmd.Parameters.Add(new SqlParameter("@z",z));
+
+                var rows = await cmd.ExecuteNonQueryAsync();
+                log.Info($"{rows} rows were updated");
+            }
+        }
+    }
+
+    return "+" != mode
+        ? req.CreateResponse(HttpStatusCode.BadRequest, "Go away robot!")
+        : req.CreateResponse(HttpStatusCode.OK, "Saved");
+}
+    #%%%
+
+    <p>
+        Powyższa funkcja działa w ten sposób, że przyjmuje JSONa w postaci
+    </p>
+
+    %%%#code_json^
+{
+  "m": "+",
+  "x": "0,914585",
+  "y": "-1,034295",
+  "z": "9,524135",
+  "d": "2017-07-11 12:43:00"
+}
+    #%%%
+
+    <p>którego zawartość jest zapisywana do bazy danych. Niepodanie parametru <strong>d</strong> czyli daty odczytu spowoduje automatycznym nadaniem daty przez bazę danych.</p>
+
+    <p>
+        Przechodzimy na zakładkę <strong>Integrate</strong> i upewniamy się, że pole <strong>Authorization level</strong> ma wartość <strong>Function</strong>.
+    </p>
+
+    <p>
+        Na zakładce <strong>Manage</strong> pobieramy klucz dostępowy (default) lub generujemy nowy.
+    </p>
+
+    <image-info info="Klucze autoryzacyjne" src="/img/topic/azure-funkcje-android-wear/fn-keys.png"></image-info>
+
+    <p>
+        Wracamy do definicji funkcji <strong>moja_funkcja</strong> i pobieramy jej URL klikając w link <strong>&lt;/&gt; Get function URL</strong>
+    </p>
+
+    <p>
+        Azure podpowiada całe wywołanie z podaniem klucza jako parametr całego adresu ale w tym przykładzie klucz autoryzacyjny zostanie przekazany przez nagłówek <strong>x-functions-key</strong>. URL, który będzie użyty powinien wyglądać mniej więcej następująco:
+    </p>
+
+    %%%#code_bash^
+https://aplikacja_fn.azurewebsites.net/api/moja_funkcja
+    #%%%
+
+    <h3>Android Wear - tarcza zegarka</h3>
+
+    <p>
+        Dlaczego tarcza zegarka? W raz z pojawieniem się wersji systemu Android Wear 2.0, Google położyło przede wszystkim nacisk na możliwo szybkiej zmiany tarczy zegarka - gest przesuwania prawo-lewo. Dlatego jeśli zegarek ma logować do chmury to zmieniamy tarczę na logującą a jeżeli ma nie logować - wracamy do podstawowej. Wystarczą dwa proste ruchy palcem.
+    </p>
+
+    <p>
+        <strong>UWAGA</strong> Preferowanym systemem jest Android Wear w wersji 2.0, który pozwala na instalowanie aplikacji niezależnie od telefonu.
+    </p>
+
+    <p>
+        Używając Android Studio tworzymy nową aplikację tylko na zegarki - <strong>Wear</strong>. Z dostępnych początkowo szablonów wybieramy tarczę zegarka - <strong>Watch Face</strong>.
+    </p>
+
+    <p>
+        Po tym jak Android Studio wygeneruje wszystkie klasy znajdujemy dziedziczącą z <strong>CanvasWatchFaceService.Engine</strong> ponieważ chodzi o metodę <strong>onTimeTick()</strong>
+    </p>
+
+    %%%#code_java^
+@Override
+public void onTimeTick() {
+    super.onTimeTick();
+    invalidate();
+
+    // wykonanie własnej metody
+    saveSensorDataToCloud();
+}
+    #%%%
+
+    <p>
+        Metoda <strong>onTimeTick()</strong> jest idealna do użycia ponieważ póki tarcza jest wyświetlana (widoczna) mamy pewność, że jest ona wykonywana co najmniej raz na minutę po to aby zegarek zaktualizował wyświetlaną godzinę. Częstsze jej użycie następuje wtedy gdy zegarek przechodzi z trybu aktywnego do trybu działania w tle i na odwrót - słowem gdy tarcza zegarka jest dotykana przez użytkownika.
+    </p>
+
+    <p>
+        Nie wdając się w szczegóły implementacji tarczy wysłanie danych z akcelerometru, korzystając z biblioteki <a href="http://square.github.io/okhttp/">Ok Http</a> metodą POST do chmury wygląda w następujący sposób:
+    </p>
+
+    %%%#code_java^
+final MediaType JSON = MediaType.parse("application/json");
+final OkHttpClient client = new OkHttpClient();
+
+void post(String json){
+    try {
+        Log.v("__WAA_RQ__", "Data: " + json);
+
+        RequestBody body = RequestBody.create(JSON, json);
+        Request request = new Request.Builder()
+                .url("https://aplikacja_fn.azurewebsites.net/api/moja_funkcja")
+                .header(
+                        "x-functions-key",
+                        "heO/h2byLyadP3sTx/oWrv2PPbMCFWdVJVHlo7qDgabIp1bzUTmKlg=="
+                )
+                .post(body)
+                .build();
+
+        Response response = client.newCall(request).execute();
+        boolean isOk = response.isSuccessful();
+        String resBody = response.body().string();
+
+        Log.v("__WAA_RE__", isOk + ": " + resBody);
+    } catch (IOException iex) {
+        Log.e("__WAA_E__", "Cannot send to URL!", iex);
+    }
+}
+    #%%%
+
+    <h3>Android Wear - wrzucanie aplikacji na zegarek</h3>
+
+    <p>
+        Aby móc wrzucić aplikację na zegarek należy najpierw na zegarku w ustawieniach deweloperskich zezwolić na debuggowanie przez WiFi.
+        <strong>UWAGA</strong> po przełączeniu tej opcji adres IP pojawia się po dłuższej chwili.
+    </p>
+
+    <image-info info="Włączenie debuggowania po WiFi" src="/img/topic/azure-funkcje-android-wear/dbg.png"></image-info>   
+
+    <p>
+        Teraz należy ADB połączyć do zegarka
+    </p>
+
+    %%%#code_bash^
+# podłączenie ADB do zegarka
+\> adb.exe connect 192.168.1.104
+
+# wykonanie zrzutu ekranu (podane jako ciekawostka)
+\> adb.exe shell screencap -p /sdcard/s.png
+\> adb.exe pull -p /sdcard/s.png
+\> adb.exe shell rm /sdcard/s.png
+    #%%%
+
+    <p>
+        Ponieważ polecenie <strong>Run 'app'</strong> w Android Studio nie działa ze względu na brak startowego Activity należy z menu <strong>Run - Edit configurations...</strong> wybrać opcję <strong>Launch Options: Launch: Nothing</strong>
+    </p>
+
+    <image-info info="Ustawienia startowe Android Studio" src="/img/topic/azure-funkcje-android-wear/studio-run.png"></image-info>  
+
+    <h3>Działanie</h3>
+
+    <p>
+        Teraz w ADB Logcat mogą pojawić się co minutę następujące wpisy
+    </p>
+
+    %%%#code_bash^
+# nie podano (prawidłowego) klucza autoryzacji
+V/__WAA_RQ__: Data: {"m":"+", ...}
+V/__WAA_RE__: false:
+
+# nie ustawiono (prawidłowego) parametru "m"/"mode"
+V/__WAA_RQ__: Data: {"m":"?", ...}
+V/__WAA_RE__: false: "Go away robot!"
+
+# ok
+V/__WAA_RQ__: Data: {"m":"+","x":"0,972046","y":"-1,101333","z":"9,634268","d":"2017-07-11 12:46:09"}
+V/__WAA_RE__: true: "Saved" 
+    #%%%
+
+    <p>
+        Jednak tylko w ostatnim przypadku, gdy wszystko zostało poprawnie skonfigurowane w portalu Azure w logach funkcji pojawi się następujący wpis
+    </p>
+
+    %%%#code_bash^
+Welcome, you are now connected to log-streaming service.
+Function started (Id=f92fd230-5283-4c3c-901c-bdbe6c37989f)
+(x,y,z)=(0.972046,-1.101333,9.634268)
+1 rows were updated
+Function completed (Success, Id=f92fd230-5283-4c3c-901c-bdbe6c37989f, Duration=0ms)
+    #%%%
+
+    <h3>Dane zebrane w tabeli</h3>
+
+    <p>
+        Po nocy działania na ręku z tabeli znalazły się takie dane
+    </p>
+
+    <image-info info="Zalogowane dane" src="/img/topic/azure-funkcje-android-wear/sqld.png"></image-info> 
+
+    <p>
+        Teraz już tylko pozostaje kwestia analizy danych...
+    </p>
+
+</div>
