@@ -4,10 +4,11 @@ var fs = require('fs'),
 
 var hljs = require('./highlight.min.js');
 var pg = require('./percentage.js');
+var tocer = require('./tocer.js');
 
 // HLJS Langs (hljs.listLanguages()): 'apache','bash','coffeescript','cpp','cs','css','diff','http','ini','java','javascript','json','makefile','xml','markdown','nginx','objectivec','perl','php','python','ruby','sql'
 
-(function(fs, path, process, pg, hljs, undefined) {
+(function(fs, path, process, pg, hljs, tocer, undefined) {
     "use strict"; 
 
     __dirname = process.cwd();
@@ -104,7 +105,8 @@ var pg = require('./percentage.js');
             var elemTemplate = getTemplate(srcRelPage);
 
             console.log('rendering', elem.name, 'to', dstTopic);
-            StandardTemplateReplacements.body = elemTemplate(StandardTopicReplacements);
+            var rawBody = elemTemplate(StandardTopicReplacements);
+            StandardTemplateReplacements.body = tocer.createToc(rawBody);
             StandardTemplateReplacements.name = elem.title;
             StandardTemplateReplacements.tagline = elem.description;
             renderTemplate(
@@ -218,4 +220,4 @@ var pg = require('./percentage.js');
         mkDir: mkDir,
         readDirAll: readDirAll
     };
-})(fs, path, process, pg, hljs);
+})(fs, path, process, pg, hljs, tocer);
