@@ -44,7 +44,9 @@
         <div>
     <h1>AWS EC2 - Instancje maszyn wirtualnych z serii T<top-date>05.VII.2017</top-date></h1>
 
-    <h3>Instancje ze zbiornikiem N<sub>2</sub>O</h3>
+    <h3>Spis treści</h3><ol class="toc"><li><a href="#InstancjezezbiornikiemN2O">Instancje ze zbiornikiem N<sub>2</sub>O</a></li><li><a href="#Sprawdzian">Sprawdzian</a></li><li><a href="#Wyniki">Wyniki</a></li><li><a href="#Wniosek">Wniosek</a></li></ol>
+<a id="InstancjezezbiornikiemN2O"></a>
+<h3>Instancje ze zbiornikiem N<sub>2</sub>O</h3>
 
     <p>
         W którymś z webinariów Mirek Burnejko z <a href="http://chmurowisko.pl/" target="_blank" rel="nofollow">http://chmurowisko.pl/</a> zwrócił uwagę, że instancje maszyn EC2 z serii T wyglądają na znacznie tańsze (porównanie poniżej) od maszyn o takich samych parametrach np. w chmurze Azure - ale tylko pozornie. 
@@ -67,7 +69,8 @@
         Jeśli wszystkie CPU-kredyty zostaną zużyte to wydajność maszyny zostaje zmniejszona do 10% swojej wartości nominalnej.
     </p>
 
-    <h3>Sprawdzian</h3>
+    <a id="Sprawdzian"></a>
+<h3>Sprawdzian</h3>
 
     <p>
         Do sprawdzenia zachowania chmury Amazona posłużył autorski skrypt w Pythonie, którego zadaniem było rozkręcenie procesora tak aby ciągle chodził na 100% z punktu widzenia maszyny na której pracuje. Dodatkowo co określony czas w sekundach (<i>SECS</i>) miał zapisywać wydajność maszyny do pliku - wydajność nie była liczona jako jakiś standard, np. FLOPSy, lecz jako ilość obrotów pętli w jednostce czasu. Takie wartości wystarczą do względnego porównania wydajności maszyny - przed i po tym jak skończą się CPU-kredyty.
@@ -129,7 +132,8 @@ SECS = <span class="hljs-number">30</span>
         p = Process ( target = f, args = ( n, ) )
         p.start ( )</code></pre>
 
-    <h3>Wyniki</h3>
+    <a id="Wyniki"></a>
+<h3>Wyniki</h3>
 
     <p>
         Skrypt wygenerował plik, który wyglądał mniej więcej tak
@@ -170,7 +174,8 @@ SECS = <span class="hljs-number">30</span>
         Po wyłączeniu skryptu, w okolicach godziny 18 widać, że CPU-kredyty znów zaczynają się kumulować do granicznej wartości 144.
     </p>
 
-    <h3>Wniosek</h3>
+    <a id="Wniosek"></a>
+<h3>Wniosek</h3>
 
     <p>
         Wniosek jest taki sam jaki podsuwa nam Amazon - instancje z serii T są przeznaczone dla użytkowników, którzy w większości przypadków sporadycznie potrzebują pełnej mocy obliczeniowej maszyny.

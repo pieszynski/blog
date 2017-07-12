@@ -44,7 +44,9 @@
         <div>
     <h1>Azure: Funkcje i Android Wear<top-date>11.VII.2017</top-date></h1>
     
-    <h3>Wstęp</h3>
+    <h3>Spis treści</h3><ol class="toc"><li><a href="#Wstp">Wstęp</a></li><li><a href="#PrzygotowanieSQLServer">Przygotowanie - SQL Server</a></li><li><a href="#FunkcjaAzure">Funkcja Azure</a></li><li><a href="#AndroidWeartarczazegarka">Android Wear - tarcza zegarka</a></li><li><a href="#AndroidWearwrzucanieaplikacjinazegarek">Android Wear - wrzucanie aplikacji na zegarek</a></li><li><a href="#Dziaanie">Działanie</a></li><li><a href="#Danezebranewtabeli">Dane zebrane w tabeli</a></li></ol>
+<a id="Wstp"></a>
+<h3>Wstęp</h3>
 
     <p>
         Celem było zalogowanie aktywności podczas snu dlatego od razu na myśl przyszedł zegarek z systemem Android Wear. Ponieważ jednak aby pobrać dane z zegarka trzeba się trochę namęczyć (czyt. ADB) dlatego najwygodniejszym rozwiązaniem było wysyłanie danych na bieżąco do chmury. Sam zegarek jeśli posiada WiFi to zostanie ono użyte a gdyby zniknęło (brak połączenia) zegarek potrafi korzystać z danych pakietowych sparowanego telefonu.
@@ -54,7 +56,8 @@
         Jeśli chodzi o część chmurową to nastąpił czas na sprawdzenie co oferują nowe, bezserwerowe aplikacje - funkcje w chmurze.
     </p>
 
-    <h3>Przygotowanie - SQL Server</h3>
+    <a id="PrzygotowanieSQLServer"></a>
+<h3>Przygotowanie - SQL Server</h3>
 
     <p>
         Po założeniu nowej bazy danych w obrębie SQL Servera portal Azure generuje Connection String po kliknięciu w link <i>Show database connection strings</i>
@@ -91,7 +94,8 @@ EXEC sp_addrolemember <span class="hljs-string">'db_datawriter'</span>, <span cl
     [Z] Float not null
 )</code></pre>
 
-    <h3>Funkcja Azure</h3>
+    <a id="FunkcjaAzure"></a>
+<h3>Funkcja Azure</h3>
 
     <p>
         Najpierw dodajemy tzw. aplikację funkcyjną (<strong>Function App</strong>), która jest kontenerem wszystkich funkcji, które w obrębie tej aplikacji dodamy. Główną zaletą tego typu aplikacji (w stosunku do web aplikacji) jest to, że plan hostingowy można ustawić na tryb <strong>Consumption Plan</strong> czyli płacimy tylko za czas wykonywania funkcji liczony w milisekundach i zajętości pamięci - szczegóły pod adresem <a href="https://azure.microsoft.com/pl-pl/pricing/details/functions/" target="_blank" rel="nofollow">Functions - cennik</a>.
@@ -205,7 +209,8 @@ EXEC sp_addrolemember <span class="hljs-string">'db_datawriter'</span>, <span cl
 
     <pre><code class="hljs bash">https://aplikacja_fn.azurewebsites.net/api/moja_funkcja</code></pre>
 
-    <h3>Android Wear - tarcza zegarka</h3>
+    <a id="AndroidWeartarczazegarka"></a>
+<h3>Android Wear - tarcza zegarka</h3>
 
     <p>
         Dlaczego tarcza zegarka? W raz z pojawieniem się wersji systemu Android Wear 2.0, Google położyło przede wszystkim nacisk na możliwo szybkiej zmiany tarczy zegarka - gest przesuwania prawo-lewo. Dlatego jeśli zegarek ma logować do chmury to zmieniamy tarczę na logującą a jeżeli ma nie logować - wracamy do podstawowej. Wystarczą dwa proste ruchy palcem.
@@ -267,7 +272,8 @@ EXEC sp_addrolemember <span class="hljs-string">'db_datawriter'</span>, <span cl
     }
 }</code></pre>
 
-    <h3>Android Wear - wrzucanie aplikacji na zegarek</h3>
+    <a id="AndroidWearwrzucanieaplikacjinazegarek"></a>
+<h3>Android Wear - wrzucanie aplikacji na zegarek</h3>
 
     <p>
         Aby móc wrzucić aplikację na zegarek należy najpierw na zegarku w ustawieniach deweloperskich zezwolić na debuggowanie przez WiFi.
@@ -294,7 +300,8 @@ EXEC sp_addrolemember <span class="hljs-string">'db_datawriter'</span>, <span cl
 
     <image-info info="Ustawienia startowe Android Studio" src="/img/topic/azure-funkcje-android-wear/studio-run.png"></image-info>  
 
-    <h3>Działanie</h3>
+    <a id="Dziaanie"></a>
+<h3>Działanie</h3>
 
     <p>
         Teraz w ADB Logcat mogą pojawić się co minutę następujące wpisy
@@ -322,7 +329,8 @@ Function started (Id=f92fd230-5283-4c3c-901c-bdbe6c37989f)
 1 rows were updated
 Function completed (Success, Id=f92fd230-5283-4c3c-901c-bdbe6c37989f, Duration=0ms)</code></pre>
 
-    <h3>Dane zebrane w tabeli</h3>
+    <a id="Danezebranewtabeli"></a>
+<h3>Dane zebrane w tabeli</h3>
 
     <p>
         Po nocy działania na ręku z tabeli znalazły się takie dane

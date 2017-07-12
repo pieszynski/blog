@@ -44,7 +44,9 @@
         
 <div>
     <h1>Apache Cordova - konfiguracja środowiska<top-date>18.X.2014</top-date></h1>
-    <h3>Przygotowanie środowiska Windows w wersji 7+</h3>
+    <h3>Spis treści</h3><ol class="toc"><li><a href="#PrzygotowanierodowiskaWindowswwersji7">Przygotowanie środowiska Windows w wersji 7+</a></li><li><a href="#Rozszerzenieoplatformydodatkowe">Rozszerzenie o platformy dodatkowe</a></li><li><a href="#ProblemyzApacheCordova">Problemy z Apache Cordova</a></li><li><a href="#Stronyzawierajceciekawtrepowizantematem">Strony zawierające ciekawą treść powiązaną tematem</a></li></ol>
+<a id="PrzygotowanierodowiskaWindowswwersji7"></a>
+<h3>Przygotowanie środowiska Windows w wersji 7+</h3>
     <p>
         Aby przygotować sobie środowisko, na którym będzie można tworzyć aplikacje hybrydowe za pomocą <a href="http://cordova.apache.org/" target="_blank" rel="nofollow">Apache Cordova</a>, należy postępować wg. poniższych punktów.
     </p>
@@ -105,7 +107,8 @@ NODE_PATH=<span class="hljs-string">"%AppData%\npm\node_modules"</span></code></
             </div>
         </div>
     </p>
-    <h3>Rozszerzenie o platformy dodatkowe</h3>
+    <a id="Rozszerzenieoplatformydodatkowe"></a>
+<h3>Rozszerzenie o platformy dodatkowe</h3>
     <p>
         Ponieważ w Apache Cordova można tworzyć aplikacje jednocześnie pod wiele platform wygodnie jest rozwijać je najpierw w przeglądarce internetowej a dopiero potem publikować wyniki pracy na urządzenie mobilne (z resztą sama oficjalna strona Apache Cordova stwierdza, że ta platforma jest tylko do celów tworzenia aplikacji - pewnie przynajmniej na razie). Niestety otworzenie pliku <code>www/index.html</code> nie zadziała poprawnie gdyż nie wykonają się zdarzenia standardowo wykonywane na platformie Apache Cordova. Dlatego wpisując polecenie:
     </p>
@@ -116,7 +119,8 @@ NODE_PATH=<span class="hljs-string">"%AppData%\npm\node_modules"</span></code></
         dodajemy nową platformę jako witrynę sieci Web i uruchamiamy w domyślnej przeglądarce. Zamiast <code>emulate</code> można użyć opcji, która uruchamia pod adresem <code>http://localhost:8000/</code> stronę z której można obejrzeć działanie aplikacji.
     </p>
     <pre><code class="hljs bash">\&gt; cordova serve</code></pre>
-    <h3>Problemy z Apache Cordova</h3>
+    <a id="ProblemyzApacheCordova"></a>
+<h3>Problemy z Apache Cordova</h3>
     <p>
         Czasami po kompilacji gdzie wcześniej była zmieniana zawartość katalogu <code>www</code> może pojawić się komunikat:
     </p>
@@ -132,7 +136,8 @@ Error code 1 <span class="hljs-keyword">for</span> <span class="hljs-built_in">c
 \&gt; cordova platform add android
 \&gt; cordova build android</code></pre>
 
-    <h3>Strony zawierające ciekawą treść powiązaną tematem</h3>
+    <a id="Stronyzawierajceciekawtrepowizantematem"></a>
+<h3>Strony zawierające ciekawą treść powiązaną tematem</h3>
     <p>
         <ul class="no-bullet nopad">
             <li>[1] - <a href="http://goratchet.com/" target="_blank" rel="nofollow">http://goratchet.com/</a> - Interfej użytkownika stworzony przez twórców Bootstrap'a.</li>

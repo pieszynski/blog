@@ -44,7 +44,9 @@
         <div>
     <h1>AWS - autoskalowanie EC2<top-date>08.VII.2017</top-date></h1>
 
-    <h3>Przygotowanie komponentów</h3>
+    <h3>Spis treści</h3><ol class="toc"><li><a href="#Przygotowaniekomponentw">Przygotowanie komponentów</a></li><li><a href="#Konfiguracjastartowadoautoskalowania">Konfiguracja startowa do autoskalowania</a></li><li><a href="#Loadbalancerprzygotowanie">Load balancer - przygotowanie</a></li><li><a href="#Przypicieloadbalanceradoautoskalera">Przypięcie load balancera do autoskalera</a></li><li><a href="#Przykadautomatycznezwikszanieilociinstancji">Przykład - automatyczne zwiększanie ilości instancji</a></li></ol>
+<a id="Przygotowaniekomponentw"></a>
+<h3>Przygotowanie komponentów</h3>
 
     <p>
         Należy przygotować dwie podsieci w różnych Availability Zone (AZ) w obrębie jednej sieci wirtualnej - w tym przypadku wygląda to tak:
@@ -111,7 +113,8 @@ sudo -u ubuntu sh /home/ubuntu/run_node.sh</code></pre>
 
     <pre><code class="hljs bash">ip-10-0-1-52: Teraz mamy: 2017-07-08T15:27:54.864Z</code></pre>
 
-    <h3>Konfiguracja startowa do autoskalowania</h3>
+    <a id="Konfiguracjastartowadoautoskalowania"></a>
+<h3>Konfiguracja startowa do autoskalowania</h3>
 
     <ul>
         <li>Auto scaling / Auto scaling groups</li>
@@ -183,7 +186,8 @@ sudo -u ubuntu sh /home/ubuntu/run_node.sh</code></pre>
 
     <image-info info="Nowa instancja znalazła się w innym Availability Zone" src="/img/topic/aws-autoskalowanie/hand-terminated-new-zone.png"></image-info>
 
-    <h3>Load balancer - przygotowanie</h3>
+    <a id="Loadbalancerprzygotowanie"></a>
+<h3>Load balancer - przygotowanie</h3>
 
     <p>
         Teraz należy dodać klasyczny wg. AWS load balancer, który będzie dzielił równomiernie ruch pomiędzy wszystkie maszyny w różnych AZ.
@@ -229,7 +233,8 @@ sudo -u ubuntu sh /home/ubuntu/run_node.sh</code></pre>
         Po stworzeniu instancji load balancera w zakładce "Description" dostaniemy informację o jego adresie, który należy później umieścić w rekordzie CNAME swojej domeny: <strong>VPC1-LB-544907824.eu-west-1.elb.amazonaws.com (A Record)</strong>.
     </p>
 
-    <h3>Przypięcie load balancera do autoskalera</h3>
+    <a id="Przypicieloadbalanceradoautoskalera"></a>
+<h3>Przypięcie load balancera do autoskalera</h3>
 
     <p>
         Przechodzimy do "Auto Scaling Groups: VPC1_AUTO_GRP1", zakładka "Details", przycisk "Edit" i ustawiamy następujące opcje:
@@ -314,7 +319,8 @@ ubuntu@ip-10-0-1-52:~$ <span class="hljs-built_in">kill</span> 1954</code></pre>
 
     <image-info info="Liczba dostępnych dla load balancera instancji" src="/img/topic/aws-autoskalowanie/lb-healthy.png"></image-info>
 
-    <h3>Przykład - automatyczne zwiększanie ilości instancji</h3>
+    <a id="Przykadautomatycznezwikszanieilociinstancji"></a>
+<h3>Przykład - automatyczne zwiększanie ilości instancji</h3>
 
     <p>
         Aby automatycznie zwiększała się liczba instancji w autoskalerze na podstawie danych z load balancera postępujemy następująco.

@@ -45,12 +45,15 @@
 <div>
     <h1>GIT poradnik<top-date>22.XI.2014</top-date></h1>
 
-    <h3>Instalacja</h3>
+    <h3>Spis treści</h3><ol class="toc"><li><a href="#Instalacja">Instalacja</a></li><li><a href="#Wstpnakonfiguracja">Wstępna konfiguracja</a></li><li><a href="#Uatwienienazakoczenie">Ułatwienie na zakończenie</a></li><li><a href="#Najczsciejuywaneczstozapominane">Najczęsciej używane / często zapominane</a></li><li><a href="#Referencje">Referencje</a></li></ol>
+<a id="Instalacja"></a>
+<h3>Instalacja</h3>
     <p>
         Tu w zasadzie nie ma co wyjaśniać. Wystarczy znaleźć w ulubionej wyszukiwarce stronę z instalajcą GITa i zainstlować. Aktualnie instalacja znajduje się pod adresem <a nhref="http://git-scm.com/downloads">http://git-scm.com/downloads</a>.
     </p>
 
-    <h3>Wstępna konfiguracja</h3>
+    <a id="Wstpnakonfiguracja"></a>
+<h3>Wstępna konfiguracja</h3>
     <p>
         GITa można wstępnie skonfigurować tak, aby podczas każdej publikacji przesyłał prawidłowe informacje o autorze zmian. Co więcej można zdefiniować aliasy, które znacznie przyspieszą wykonywanie częstych operacji w GITcie.
     </p>
@@ -60,7 +63,8 @@
 \&gt; git config --global alias.co checkout
 \&gt; git config --global alias.st status</code></pre>
 
-    <h3>Ułatwienie na zakończenie</h3>
+    <a id="Uatwienienazakoczenie"></a>
+<h3>Ułatwienie na zakończenie</h3>
     <p>
         Zanim umieszczę listę najbardziej przydatnych dla mnie poleceń należy zwrócić uwagę na pewien problem, który jest dość irytujący przy pracy z jakimkolwiek repozytorium zdalnym np. GitHubem. Scenariusz jest prosty i pewnie często spotykany. Czyli mamy założone co najmniej dwa repozytoria na GitHubie i dla każdego z nich mamy włączoną publikację za pomocą klucza SSH.
     </p>
@@ -111,7 +115,8 @@ and the repository exists.</code></pre>
         </li>
     </ol>
 
-    <h3>Najczęsciej używane / często zapominane</h3>
+    <a id="Najczsciejuywaneczstozapominane"></a>
+<h3>Najczęsciej używane / często zapominane</h3>
 <pre><code class="hljs bash"><span class="hljs-comment"># róznego rodzaju konfiguracje .gitignore</span>
 https://github.com/github/gitignore
 
@@ -186,7 +191,8 @@ git checkout master
 git merge upstream/master
 git push origin master</code></pre>
 
-    <h3>Referencje</h3>
+    <a id="Referencje"></a>
+<h3>Referencje</h3>
     <ul class="no-bullet nopad">
         <li>[1] - Instrukcja uproszczenia publikacji na podstawie <a nhref="http://www.freshblurbs.com/blog/2013/06/22/github-multiple-ssh-keys.html">http://www.freshblurbs.com/blog/2013/06/22/github-multiple-ssh-keys.html</a></li>
     </ul>

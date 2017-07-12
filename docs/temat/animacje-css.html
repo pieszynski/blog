@@ -156,6 +156,9 @@
 
     </style>
     <h1>Animacje za pomocą CSS<top-date>25.X.2014</top-date></h1>
+    <h3>Spis treści</h3><ol class="toc"><li><a href="#Wstp">Wstęp</a></li><li><a href="#Niewszystkozoto">*Nie wszystko złoto</a></li><li><a href="#Dodatkowerdainformacji">Dodatkowe źródła informacji</a></li></ol>
+<a id="Wstp"></a>
+<h3>Wstęp</h3>
     <p>
         Kontynuując temat apliacji hybrydowych warto się zastanowić nad ich wydajnością. Ważnym jest aby aplikacja działała płynnie i swym zachowaniem odpowiadała oczekiwaniom użytkownika a nie karała go za każdą akcję podejmowaną przez niego.
     </p>
@@ -222,14 +225,16 @@
             </div>
         </div>
     </div>
-    <h3>*Nie wszystko złoto</h3>
+    <a id="Niewszystkozoto"></a>
+<h3>*Nie wszystko złoto</h3>
     <p>
         Oczywiście nie wszystkie animacje można zrealizować za pomocą animacji w CSS. Podobnie z resztą nie jest prawdą, że wszystkie operacje w JavaScript nie są wspierane sprzętowo przez GPU. Bardzo dobrze wyjaśnia ten temat artykuł [7].
     </p>
     <p>
         Dodatkowo w przypadku sterowania podłączaniem animacji CSS za pomocą JavaScript (na przykład na kliknięcie) nie wystarczy dodać/zmienić klasy posiadającej animację do atrybutu <code>class</code> - co wydawało by się logiczne. Należy natomiast stosować trik ze sklonowaniem elementu DOM, podmianą klas CSS odpowiadających za animację, wstawieniem go obok oryginalnego i usunięciem oryginalnego elementu.
     </p>
-    <h3>Dodatkowe źródła informacji</h3>
+    <a id="Dodatkowerdainformacji"></a>
+<h3>Dodatkowe źródła informacji</h3>
     <p>
         <ul class="no-bullet nopad">
             <li>[1] - <a href="http://blogs.adobe.com/webplatform/2014/03/18/css-animations-and-transitions-performance/" target="_blank" rel="nofollow">CSS animations and transitions performance: looking inside the browser</a></li>

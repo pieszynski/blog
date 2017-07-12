@@ -44,7 +44,9 @@
         <div>
     <h1>AWS:Hello - pierwsza własna wirtualna maszyna<top-date>05.VII.2017</top-date></h1>
 
-    <h3>O co chodzi</h3>
+    <h3>Spis treści</h3><ol class="toc"><li><a href="#Ocochodzi">O co chodzi</a></li><li><a href="#VPCwirtualnasieprywatna">VPC - wirtualna sieć prywatna</a></li><li><a href="#EC2maszynawirtualna">EC2 - maszyna wirtualna</a></li><li><a href="#LogowaniedowirtualnejmaszynyEC2putty">Logowanie do wirtualnej maszyny EC2 - putty</a></li></ol>
+<a id="Ocochodzi"></a>
+<h3>O co chodzi</h3>
 
     <p>
         Poniżej znajduje się "krótka" instrukcja jak należy stworzyć wirtualną maszynę (EC2) w AWS (Amazon Web Services).
@@ -54,7 +56,8 @@
         Z uwagi na mnogość kroków i możliwość pomyłki Amazon udostępnił instrukcję ułatwiającą namierzenie problemu jeśli nie można zalogować się do maszyny przez np. putty - <a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/TroubleshootingInstancesConnecting.html#TroubleshootingInstancesConnectionTimeout" target="_blank" rel="nofollow">Troubleshooting Instances Connection Timeout</a>.
     </p>
 
-    <h3>VPC - wirtualna sieć prywatna</h3>
+    <a id="VPCwirtualnasieprywatna"></a>
+<h3>VPC - wirtualna sieć prywatna</h3>
 
     <ul>
         <li>Wybieramy region - np. Irlandia</li>
@@ -151,7 +154,8 @@
         </li>
     </ul>
 
-    <h3>EC2 - maszyna wirtualna</h3>
+    <a id="EC2maszynawirtualna"></a>
+<h3>EC2 - maszyna wirtualna</h3>
 
     <ul>
         <li>EC2 Dashboard</li>
@@ -229,7 +233,8 @@
         W przypadku stworzenia większej ilości maszyn w obrębie tego samego VPC pozornie może się wydawać, że maszyny się nie widzą gdy użyte zostanie polecenie <strong>ping</strong>. Jest to spowodowane tym, że ruch ICMP jest domyślnie zablokowany. Aby go odblokować należy do grupy zabezpieczeń (SecGrp1_SSH) dodać jeszcze wpis o "All ICMP - IPv4" w obrębie tej samej SG.
     </p>
 
-    <h3>Logowanie do wirtualnej maszyny EC2 - putty</h3>
+    <a id="LogowaniedowirtualnejmaszynyEC2putty"></a>
+<h3>Logowanie do wirtualnej maszyny EC2 - putty</h3>
 
     <p>
         Ogólne dane logowania można uzyskać wybierając instancję EC2 a następnie opcję <strong>Actions - Connect</strong>. Zaprezentowany jest tam użytkownik i IP do logowania.
