@@ -13,6 +13,9 @@ var tocer = require('./tocer.js');
 
     __dirname = process.cwd();
 
+    var RssPreamble = '<?xml version="1.0" encoding="utf-8"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>@pieszynski.com</title><link>http://pieszynski.com/</link><description>Co nowego na stronie pieszynski.com</description><atom:link href="http://pieszynski.com/feed.rss" rel="self" type="application/rss+xml" />\r\n',
+        RssTail = '\r\n</channel></rss>';
+
     var StandardTemplateReplacements = {
         title: '',
         gohome: true,
@@ -84,11 +87,8 @@ var tocer = require('./tocer.js');
     }
 
     function renderTemplate(template, replacements, dst) {
-        if (!path.isAbsolute(dst)) {
-            dst = path.normalize(path.join(__dirname, dst));
-        }
         var content = template(replacements);
-        fs.createWriteStream(dst, 'utf-8').end(content);
+        writeContentTo(dst, content);
     }
 
     function renderTopics(template, pages) {
@@ -138,10 +138,63 @@ var tocer = require('./tocer.js');
             StandardTemplateReplacements, 
             dst
             )
+
+        // wygenerowanie RSSa
+        createRss(pages)
+    }
+
+    // generowanie RSS
+    // ===============
+
+    function createRss(pages) {
+
+        var html = '<ul>\r\n',
+            rss = RssPreamble;
+
+        for(var i = 0; i < pages.pages.length; i++) {
+
+            var p = pages.pages[i];
+
+            var tUrl = pages.domain + getTopicUrl(pages, p)
+
+            // HTML
+            html += '<li><a href="';
+            html += tUrl;
+            html += '">';
+            html += p.title;
+            html += '</a></li>\r\n';
+
+            // RSS
+            rss += '<item><title>';
+            rss += p.title;
+            rss += '</title><description>';
+            rss += p.description;
+            rss += '</description><link>';
+            rss += tUrl;
+            rss += '</link><guid>';
+            rss += tUrl;
+            rss += '</guid><pubDate>';
+            rss += (new Date(p.date)).toUTCString();
+            rss += '</pubDate></item>\r\n';
+        }
+
+        html += '</ul>';
+        rss += RssTail;
+
+        var dst = path.normalize(path.join(pages.output, 'feed.rss'));
+        console.log('rendering RSS to', dst);
+        writeContentTo(dst, rss);
     }
 
     // operacje plikowe
     // ================
+
+    function writeContentTo(dst, content) {
+        if (!path.isAbsolute(dst)) {
+            dst = path.normalize(path.join(__dirname, dst));
+        }
+        fs.createWriteStream(dst, 'utf-8').end(content);
+    }
 
     function readDirAll(dir, recurse, relDir) {
         
