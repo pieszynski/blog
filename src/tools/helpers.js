@@ -5,10 +5,11 @@ var fs = require('fs'),
 var hljs = require('./highlight.min.js');
 var pg = require('./percentage.js');
 var tocer = require('./tocer.js');
+var searchGen = require('./searchGen.js');
 
 // HLJS Langs (hljs.listLanguages()): 'apache','bash','coffeescript','cpp','cs','css','diff','http','ini','java','javascript','json','makefile','xml','markdown','nginx','objectivec','perl','php','python','ruby','sql'
 
-(function(fs, path, process, pg, hljs, tocer, undefined) {
+(function(fs, path, process, pg, hljs, tocer, searchGen, undefined) {
     "use strict"; 
 
     __dirname = process.cwd();
@@ -63,9 +64,16 @@ var tocer = require('./tocer.js');
     // szablony dokumentów
     // ===================
 
+    function getRawPage(filePath) {
+
+        var rawText = fs.readFileSync(filePath, 'utf-8');
+
+        return rawText;
+    }
+
     function getTemplate(filePath) {
 
-        var templateText = fs.readFileSync(filePath, 'utf-8'),
+        var templateText = getRawPage(filePath),
             template = pg.compile(templateText);
 
         return template;
@@ -106,6 +114,10 @@ var tocer = require('./tocer.js');
 
             console.log('rendering', elem.name, 'to', dstTopic);
             var rawBody = elemTemplate(StandardTopicReplacements);
+
+            console.log('creating search index for', elem.name);
+            var pageIndex = searchGen.createIndex(getRawPage(srcRelPage));
+
             StandardTemplateReplacements.body = tocer.createToc(rawBody);
             StandardTemplateReplacements.name = elem.title;
             StandardTemplateReplacements.tagline = elem.description;
@@ -273,4 +285,4 @@ var tocer = require('./tocer.js');
         mkDir: mkDir,
         readDirAll: readDirAll
     };
-})(fs, path, process, pg, hljs, tocer);
+})(fs, path, process, pg, hljs, tocer, searchGen);
