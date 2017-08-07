@@ -22,7 +22,10 @@ var searchGen = require('./searchGen.js');
         gohome: true,
         name: '',
         tagline: '',
-        body: ''
+        body: '',
+        twitterTitle: '',
+        twitterDescription: '',
+        twitterImage: ''
     }
 
     var StandardTopicReplacements = {
@@ -104,6 +107,7 @@ var searchGen = require('./searchGen.js');
 
         StandardTemplateReplacements.title = pages.title;
         StandardTemplateReplacements.gohome = true;
+        StandardTemplateReplacements.twitterImage = pages.domain + pages.twitterDefaultImage;
 
         StandardTopicReplacements.ref_topic = buildRefTopicFn(pages);
 
@@ -121,6 +125,8 @@ var searchGen = require('./searchGen.js');
             StandardTemplateReplacements.body = tocer.createToc(rawBody);
             StandardTemplateReplacements.name = elem.title;
             StandardTemplateReplacements.tagline = elem.description;
+            StandardTemplateReplacements.twitterTitle = elem.title;
+            StandardTemplateReplacements.twitterDescription = elem.description;
             renderTemplate(
                 template, 
                 StandardTemplateReplacements, 
@@ -144,6 +150,11 @@ var searchGen = require('./searchGen.js');
         StandardTemplateReplacements.name = pages.name;
         StandardTemplateReplacements.tagline = pages.description;
         StandardTemplateReplacements.body = body;
+        
+        StandardTemplateReplacements.twitterTitle = pages.title;
+        StandardTemplateReplacements.twitterDescription = pages.description;
+        StandardTemplateReplacements.twitterImage = pages.domain + pages.twitterDefaultImage;
+
         console.log('rendering root to', dst);
         renderTemplate(
             template, 

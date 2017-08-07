@@ -8,6 +8,7 @@
     "pagesRoute" : "temat",
     "pagesPath" : "topic",
     "domain": "http://pieszynski.com",
+    "twitterDefaultImage": "/favicon.png",
     "javascript-dependencies": {
         "jquery":"2.1.1",
         "angular": "1.3.x",
