@@ -1,0 +1,344 @@
+<div>
+    <h3>Wstęp</h3>
+
+    <p>
+        Migracja bazy danych a w zasadzie jej stworzenie przy podejściu CodeFirst dość dobrze jest opisana w artykułach od Microsoftu (i nie tylko) do których linki są poniżej. 
+    </p>
+
+    <ul>
+        <li><a href="https://docs.microsoft.com/en-us/ef/core/get-started/aspnetcore/new-db" target="_blank" rel="nofollow">Getting Started with EF Core on ASP.NET Core with a New database</a></li>
+        <li><a href="https://docs.microsoft.com/en-us/aspnet/core/data/ef-mvc/migrations" target="_blank" rel="nofollow">Migrations - EF Core with ASP.NET Core MVC tutorial (4 of 10)</a></li>
+        <li><a href="http://www.learnentityframeworkcore.com/migrations" target="_blank" rel="nofollow">Entity Framework Core Migrations</a></li>
+        <li><a href="http://benjii.me/2017/05/enable-entity-framework-core-migrations-visual-studio-2017/" target="_blank" rel="nofollow">Enable Entity Framework Core Migrations in Visual Studio 2017</a></li>
+    </ul>
+
+    <p>
+        Co jeśli jednak to za dużo magii i chce się mniej więcej poznać jak EntityFramework (EF) wykonuje te migracje? Jak taką migrację przygotować ręcznie?
+    </p>
+
+    <h3>Przybornik</h3>
+
+    <p>
+        Do tego zadania potrzebne będą
+    </p>
+
+    <ul>
+        <li>Projekt w .NET Core 2.0. Najlepiej ASP.NET Core Web Application</li>
+        <li>Baza danych oparta o MS SQL Server</li>
+        <li>
+            <span>Doinstalowanie poniższych nugetów</span>
+            <ul>
+                <li>Microsoft.AspNetCore.All (ten pewnie już jest)</li>
+                <li>Microsoft.EntityFrameworkCore</li>
+                <li>Microsoft.EntityFrameworkCore.SqlServer</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>Jak EF migruje bazę danych?</h3>
+
+    <p>
+        Wykonanie migracji bazy danych w EF jest niezwykle skomplikowane i do jej wykonania potrzebna jest aż jedna linia:
+    </p>
+
+    %%%#code_cs^
+context.Database.Migrate();
+    #%%%
+
+    <p>
+        Prosto jest uruchomić migrację ale żeby przygotować ręcznie skrypt migracyjny bez używania narzędzi należy
+    </p>
+
+    <ul>
+        <li>Stworzyć klasę dziedziczącą z <code>Migration</code></li>
+        <li>Wskazać, że dotyczy konkretnego kontekstu: <code>[DbContext(typeof(HelloContext))]</code></li>
+        <li>Nazwać ją, np. <code>[Migration("201709252218_migracja2")]</code>. Uwaga na nazwę bo wszystkie nazwy migracji są sortowane alfabetycznie i uruchamiane po kolei</li>
+    </ul>
+
+    <p>
+        Plik "HelloMigrations.cs" specjalnie zawiera klasy, których nazwy są w odwrotnej kolejności alfabetycznej niż te umieszczone w atrybutach <strong>Migration</strong> aby pokazać, że się nie liczą.
+    </p>
+
+    <p>
+        Migracja powinna zostać wykonana w kolejności:
+    </p>
+
+    <ul>
+        <li>Stworzenie tabeli z blogami - "201709252151_migracja1" (klasa "hello3")</li>
+        <li>Rozszerzenie schematu o posty w blogach - "201709252218_migracja2" (klasa "hello2")</li>
+    </ul>
+
+    %%%#code_cs^
+using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+
+namespace aspCoreMigr
+{
+    [DbContext(typeof(HelloContext))]
+    [Migration("201709252218_migracja2")]
+    public class hello2 : Migration
+    {
+        protected override void Up(MigrationBuilder builder)
+        {
+            builder.CreateTable(
+                name: "Posts",
+                columns: table => new
+                {
+                    Id = table.Column<int>(nullable: false)
+                        .Annotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn),
+                    BlogId = table.Column<int>(nullable: false),
+                    Name = table.Column<string>(nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Posts_Id", k => k.Id);
+                    table.ForeignKey("FK_Posts_Blogs", p => p.BlogId, "Blogs", nameof(Blog.Id));
+                }
+                );
+        }
+    }
+
+    [DbContext(typeof(HelloContext))]
+    [Migration("201709252151_migracja1")]
+    public class hello3 : Migration
+    {
+        protected override void Up(MigrationBuilder builder)
+        {
+            //builder.HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+            builder.CreateTable(
+                name: "Blogs",
+                columns: table => new
+                {
+                    Id = table.Column<int>(nullable: false)
+                        .Annotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn),
+                    Url = table.Column<string>(nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Blogs_Id", k => k.Id);
+                }
+                );
+        }
+    }
+}
+    #%%%
+
+    <p>
+        EF przegląda bibliotekę w poszukiwaniu klas spełniających wskazane wyżej kryteria i uruchamia migrację, którą widać w logach konsoli
+    </p>
+
+    %%%#code_bash^
+info: Microsoft.EntityFrameworkCore.Database.Command[200101]
+      Executed DbCommand (127ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT [MigrationId], [ProductVersion]
+      FROM [__EFMigrationsHistory]
+      ORDER BY [MigrationId];
+info: Microsoft.EntityFrameworkCore.Migrations[200402]
+      Applying migration '201709252151_migracja1'.
+info: Microsoft.EntityFrameworkCore.Database.Command[200101]
+      Executed DbCommand (173ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE TABLE [Blogs] (
+          [Id] int NOT NULL IDENTITY,
+          [Url] nvarchar(max) NOT NULL,
+          CONSTRAINT [PK_Blogs_Id] PRIMARY KEY ([Id])
+      );
+info: Microsoft.EntityFrameworkCore.Database.Command[200101]
+      Executed DbCommand (131ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+      VALUES (N'201709252151_migracja1', N'2.0.0-rtm-26452');
+info: Microsoft.EntityFrameworkCore.Migrations[200402]
+      Applying migration '201709252218_migracja2'.
+info: Microsoft.EntityFrameworkCore.Database.Command[200101]
+      Executed DbCommand (139ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      CREATE TABLE [Posts] (
+          [Id] int NOT NULL IDENTITY,
+          [BlogId] int NOT NULL,
+          [Name] nvarchar(max) NOT NULL,
+          CONSTRAINT [PK_Posts_Id] PRIMARY KEY ([Id]),
+          CONSTRAINT [FK_Posts_Blogs] FOREIGN KEY ([BlogId]) REFERENCES [Blogs] ([Id])
+      );
+info: Microsoft.EntityFrameworkCore.Database.Command[200101]
+      Executed DbCommand (130ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+      VALUES (N'201709252218_migracja2', N'2.0.0-rtm-26452');
+    #%%%
+
+    <p>
+        Po takiej operacji w bazie znajdują się trzy dodatkowe tabele:
+    </p>
+
+    <ul>
+        <li>__EFMigrationsHistory</li>
+        <li>Blogs</li>
+        <li>Posts</li>
+    </ul>
+
+    <p>
+        Kolejne uruchomienie migracji nie spowoduje żadnego efektu ponieważ EF zapisuje wykonane migracje w tabeli <code>[__EFMigrationsHistory]</code>
+    </p>
+
+    %%%#code_bash^
+info: Microsoft.EntityFrameworkCore.Migrations[200405]
+      No migrations were applied. The database is already up to date.
+    #%%%
+
+    <h3>Uruchomienie migracji</h3>
+
+    <p>O ile wywołanie procesu migracji to jedna linia to jednak trochę kodu trzeba przygotować aby tą linię wykonać - plik "DbMigrate.cs"</p>
+
+    %%%#code_cs^
+public static class DoMigrate
+{
+    public static void prepareDb(IApplicationBuilder app, ILogger<Startup> logger)
+    {
+        using (var scope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<HelloContext>();
+
+            // wykonanie migracji
+            context.Database.Migrate();
+
+            // sprawdzenie poprawności - odczyt i/lub zapis
+
+            const string bloUrl = "http://pieszynski.com/";
+
+            Blog dotnetowy = context.Blogs
+                .Include(i => i.BlogPosts)
+                .FirstOrDefault(f => f.Url == bloUrl);
+
+            if (null == dotnetowy)
+            {
+                dotnetowy = new Blog
+                {
+                    Url = bloUrl,
+                    BlogPosts = new List<Post>
+                    {
+                        new Post
+                        {
+                            Name = "Pierwszy!!111"
+                        }
+                    }
+                };
+                context.Blogs.Add(dotnetowy);
+                context.SaveChanges();
+
+                logger.LogWarning(
+                    10,
+                    $"Nowy blog: {dotnetowy.Id} i post {dotnetowy.BlogPosts[0].Id}"
+                    );
+            }
+            else
+                logger.LogWarning(
+                    20,
+                    $"Blog juz istnial pod: {dotnetowy.Id}" +
+                    $" i ma {dotnetowy.BlogPosts?.Count ?? -1} postow"
+                    );
+        }
+    }
+}
+    #%%%
+
+    <h3>Podsumowanie</h3>
+
+    <p>
+        Skoro już wiadomo jak działa migracja bazy za pomocą EF to lepiej ją tworzyć nie ręcznie lecz przez narzędzia takie jak np. <code>PS&gt; Add-Migration nazwa_migracji</code>, ponieważ dodają one dodatki związane ściśle z technologią danego serwera bazodanowego (np. "SqlServer:ValueGenerationStrategy").
+    </p>
+
+    <p>
+        Warto jednak, jeśli zachodzi taka potrzeba do migracji dopisywać własne zapytania związane z rzeczami, o których EF nie może mieć pojęcia - <code>builder.Sql(...)</code>
+    </p>
+
+    <h3>Zapychacze, czyli pozostałe pliki projektu</h3>
+
+    <h4>Plik Startup.cs</h4>
+
+    <p>
+        Zawartość jest praktycznie szablonowa za wyjątkiem
+    </p>
+
+    <ul>
+        <li>Dodania konfiguracji do SQL Servera</li>
+        <li>Uruchomienie migracji za pomocą <code>DoMigrate.prepareDb(app, logger);</code></li>
+    </ul>
+
+    <h4>Modele i kontekst</h4>
+
+    %%%#code_cs^
+[Table("Blogs")]
+public class Blog
+{
+    [Key]
+    public int Id { get; set; }
+    public string Url { get; set; }
+    
+    public List<Post> BlogPosts { get; set; }
+}
+
+[Table("Posts")]
+public class Post
+{
+    [Key]
+    public int Id { get; set; }
+    public string Name { get; set; }
+}
+
+public class HelloContext : DbContext
+{
+    public DbSet<Blog> Blogs { get; set; }
+
+    public HelloContext(DbContextOptions options) : base(options) { }
+}
+    #%%%
+
+    %%%#code_js^
+public class Startup
+{
+    IConfigurationRoot Configuration;
+
+    public Startup(IHostingEnvironment env)
+    {
+        Configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json")
+            .Build();
+    }
+
+    public void ConfigureServices(IServiceCollection services)
+    {
+        services.AddDbContext<HelloContext>(builder =>
+        {
+            builder
+                .UseSqlServer(Configuration.GetConnectionString("ContextConnection"))
+                .EnableSensitiveDataLogging();
+        });
+    }
+
+    public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILogger<Startup> logger)
+    {
+        DoMigrate.prepareDb(app, logger);
+
+        if (env.IsDevelopment())
+        {
+            app.UseDeveloperExceptionPage();
+        }
+
+        app.Run(async (context) =>
+        {
+            await context.Response.WriteAsync("Hello World!");
+        });
+    }
+}
+    #%%%
+
+    <h4>Plik appsettings.json</h4>
+
+    %%%#code_json^
+{
+  "ConnectionStrings": {
+    "ContextConnection": "Server=itp, itd..."
+  }
+}
+    #%%%
+</div>

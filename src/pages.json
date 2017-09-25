@@ -17,6 +17,12 @@
     },
     "pages" : [
         {
+            "name" : "ef-core-migracje",
+            "title" : "EntityFramework Core - migracje bez dodatków",
+            "description" : "EntityFramework Core - migracje baz bez dodatków narzędzi linii poleceń dotnet-ef czy PowerShella",
+            "date" : "2017-09-25"
+        },
+        {
             "name" : "azure-funkcje-android-wear",
             "title" : "Azure: Funkcje i Android Wear",
             "description" : "Integracja Azure Functions z zegarkiem z Android Wear 2.0",
