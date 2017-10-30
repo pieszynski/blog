@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Przemysław Pieszyński. Programista.">
+    <meta name="author" content="Przemysław Pieszyński">
+    <title>Pieszyński Blog - pieszynski.com</title>
+
+    <link href="/favicon.png" rel="shortcut icon" />
+    <link href="/favicon.png" rel="icon" />
+
+    <link href="/feed.rss" rel="alternate" type="application/rss+xml" title="pieszynski.com - co nowego?" />
+
+    <link rel="me" type="text/html" href="https://twitter.com/pieszynski"/> 
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:site" content="@pieszynski" />
+    <meta name="twitter:title" content="YouTube, czarny ekran, Azure Functions" />
+    <meta name="twitter:description" content="Odtwarzacz muzyki z serwisów wideo za pomocą Azure Functions" />
+    <meta name="twitter:image" content="http://pieszynski.com/favicon.png" />
+
+    <!--<link href="/feed.rss" rel="alternate" type="application/rss+xml" title="pieszynski.com - co nowego?" />-->
+    <meta name="theme-color" content="#157878" />
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700" rel="stylesheet" />
+    <link href="/css/cayman.css" rel="stylesheet" />
+    <link href="/css/highlight.min.css" rel="stylesheet" />
+    <link href="/css/style.css" rel="stylesheet" />
+
+    <script type="text/javascript" src="/js/vendor/jquery.min.js"></script>
+    <script type="text/javascript" src="/js/vendor/angular.min.js"></script>
+    <script type="text/javascript" src="/js/vendor/underscore-min.js"></script>
+    <script type="text/javascript" src="/js/vendor/underscore.string.min.js"></script>
+    <script type="text/javascript" src="/js/layout.js"></script>
+    <script type="text/javascript" src="/js/menuCtrl.js"></script>
+</head>
+<body ng-app="appRoot" ng-controller="rootCtrl as root">
+    <section class="page-header">
+        
+        <h1 class="project-name">YouTube, czarny ekran, Azure Functions</h1>
+        <h2 class="project-tagline">Odtwarzacz muzyki z serwisów wideo za pomocą Azure Functions</h2>
+
+        <!--<a href="https://github.com/pages-themes/cayman" class="btn">View on GitHub</a>-->   
+
+        <div class="menu-btn-hook" ng-controller="menuCtrl as menu">
+            <div class="menu-btn menu-btn-main menu-btn-shadow" ng-click="menu.toggle()">
+                <div>i</div>
+            </div>
+            <div class="menu-btn menu-btn-sub" ng-click="menu.close()">
+                <a href="/"><div>&#8592;</div></a>
+            </div>
+        </div>
+    </section>
+    <section class="main-content">
+        <div>
+    <h3>Spis treści</h3><ol class="toc"><li><a href="#SerwismuzycznyYouTubeoffline">Serwis "muzyczny" YouTube ... offline?</a></li><li><a href="#Aleale">Ale, ale!</a></li><li><a href="#FN1Przeniesienieyoutubedldochmury">FN_1: Przeniesienie youtube-dl do chmury</a></li><li><a href="#FN2FunkcjaprzelotkawC">FN_2: Funkcja-przelotka w C#</a></li><li><a href="#OdtwarzaczmuzykiwHTML5">Odtwarzacz muzyki w HTML5</a></li><li><a href="#WystawianieodtwarzaczaHTMLnawiat">Wystawianie odtwarzacza HTML na świat</a></li><li><a href="#Miegosuchaniawtrybieoffline">Miłego słuchania w trybie offline!</a></li></ol>
+<a id="SerwismuzycznyYouTubeoffline"></a>
+<h3>Serwis "muzyczny" YouTube ... offline?</h3>
+
+    <p>
+        Na YouTube znajdują się praktycznie wszystkie teledyski utworów muzycznych. Żeby jednak tylko posłuchać fajnej muzyki, korzystając np. ze smartfona, ekran musi się świecić. Wygaszenie ekranu spowoduje zatrzymanie odtwarzania przez aplikację YouTube.
+    </p>
+
+    <p>
+        Z pomocą przychodzi aplikacja <a href="https://github.com/rg3/youtube-dl/" target="_blank" rel="nofollow">youtube-dl</a>. W aplikacji można wskazać, że interesuje nas tylko ścieżka muzyczna (flaga <code>-f numer_formatu</code>). Potem trzeba przerzucić plik na telefon, itd., itd. 
+    </p>
+
+    <a id="Aleale"></a>
+<h3>Ale, ale!</h3>
+
+    <ul>
+        <li>Czy przypadkiem youtube-dl nie jest napisany w Python?</li>
+        <li>Czy Azure Functions nie zaczęło ostatnio obsługiwać Pythona? (Wsparcie jest jeszcze marne, ale wystarczy - <a href="https://github.com/Azure/azure-webjobs-sdk-script/issues/335" target="_blank" rel="nofollow">Feature planning: first class Python support #335</a></li>
+    </ul>
+
+    <a id="FN1Przeniesienieyoutubedldochmury"></a>
+<h3>FN_1: Przeniesienie youtube-dl do chmury</h3>
+
+    <p>
+        Youtube-dl został dostosowany tak (na początku tak nie było) aby można było praktycznie korzystać z niego jak z biblioteki oferującej pewien zestaw API. Dlatego wystarczy rozpisać klasę dziedziczącą z <code>YoutubeDL</code> i trochę kodu dla Azure Functions.
+    </p>
+
+    <p>
+        Oczywiście nie jest tak różowo bo funkcje Azure napisane w Pythonie potrafią zwracać tylko ciągi znaków i to jeszcze w cudzysłowach! Dlatego rozwiązaniem na szybko jest zwykła konwersja muzyki w formacie WEBM na ciąg znaków w formacie szesnastkowym. Czyli wynikiem działania funkcji będzie ciąg wyglądający mniej więcej tak jak poniżej (tak, cudzysłowy też będą).
+    </p>
+
+    <pre><code class="hljs bash"><span class="hljs-string">"FAC3..."</span></code></pre>
+
+    <p>
+        Poniżej znajduje się implementacja funkcji pobierającej muzykę w formacie WEBM.
+    </p>
+
+    <pre><code class="hljs python"><span class="hljs-comment"># plik ./run.py</span>
+<span class="hljs-comment">#</span>
+<span class="hljs-keyword">import</span> os
+<span class="hljs-keyword">import</span> io
+<span class="hljs-keyword">import</span> json
+<span class="hljs-keyword">import</span> urllib2
+
+<span class="hljs-keyword">from</span> youtube_dl <span class="hljs-keyword">import</span> YoutubeDL
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">YDL</span><span class="hljs-params">(YoutubeDL)</span>:</span>
+    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">__init__</span><span class="hljs-params">(self, *args, **kwargs)</span>:</span>
+        super(YDL, self).__init__(*args, **kwargs)
+
+        self.jsonMsg = <span class="hljs-keyword">None</span>
+
+    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">to_screen</span><span class="hljs-params">(self, msg, skip_eol=False)</span>:</span>
+        <span class="hljs-keyword">pass</span>
+
+    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">report_warning</span><span class="hljs-params">(self, msg)</span>:</span>
+        <span class="hljs-keyword">pass</span>
+
+    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">to_stdout</span><span class="hljs-params">(self, msg, skip_eol=False, check_quiet=False)</span>:</span>
+        <span class="hljs-comment"># youtube-dl podczas działania rzuca różnymi śmieciami</span>
+        <span class="hljs-comment"># nas interesuje tylko JSON wyzwolony flagą 'dump_single_json'</span>
+        <span class="hljs-keyword">if</span> msg.startswith(<span class="hljs-string">'{"'</span>):
+            self.jsonMsg = msg
+
+
+<span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">getRawUrl</span><span class="hljs-params">(urly)</span>:</span>
+    ydl = YDL({
+        <span class="hljs-string">'simulate'</span>: <span class="hljs-keyword">True</span>,
+        <span class="hljs-string">'quiet'</span>: <span class="hljs-keyword">True</span>,
+        <span class="hljs-string">'dump_single_json'</span>: <span class="hljs-keyword">True</span>
+        })
+
+    all_urls = [urly]
+
+    <span class="hljs-comment"># uruchomienie youtube-dl</span>
+    ydl.download(all_urls)
+
+    <span class="hljs-comment"># jeśli pojawił się JSON to wybieramy pierwszą ścieżkę WEBM</span>
+    <span class="hljs-keyword">if</span> ydl.jsonMsg != <span class="hljs-keyword">None</span>:
+        cfg = json.loads ( ydl.jsonMsg )
+        <span class="hljs-keyword">for</span> fmt <span class="hljs-keyword">in</span> cfg.get(<span class="hljs-string">'formats'</span>, <span class="hljs-keyword">None</span>):
+            <span class="hljs-keyword">if</span> <span class="hljs-string">'webm'</span> != fmt.get(<span class="hljs-string">'ext'</span>, <span class="hljs-keyword">None</span>):
+                <span class="hljs-keyword">continue</span>
+            urlm = fmt.get(<span class="hljs-string">'url'</span>, <span class="hljs-keyword">None</span>)
+            <span class="hljs-keyword">return</span> urlm
+            <span class="hljs-keyword">break</span>
+
+<span class="hljs-comment"># standardowy kod z przykładu nowej funkcji Azure w Python...</span>
+postreqdata = json.loads(open(os.environ[<span class="hljs-string">'req'</span>]).read())
+
+rurl = postreqdata[<span class="hljs-string">'rurl'</span>]
+<span class="hljs-keyword">print</span> (<span class="hljs-string">"getting url nfo"</span>, rurl)
+wurl = getRawUrl(rurl)
+os_res = os.environ[<span class="hljs-string">'res'</span>]
+print(<span class="hljs-string">'os_res'</span>, type(os_res), os_res)
+response = open(os_res, <span class="hljs-string">'wb'</span>)
+
+<span class="hljs-comment"># problem niestety jest taki, że funkcja Azure zwraca zawsze</span>
+<span class="hljs-comment"># tylko ciąg znaków otoczony cudzysłowami niezależnie od tego</span>
+<span class="hljs-comment"># czy strumień 'response' jest wskazany jako binarny ('wb')</span>
+
+ctx = urllib2.urlopen(wurl)
+
+<span class="hljs-comment"># konwersja binarnej zawartości na ciąg szesnastkowy...</span>
+hexed_data = <span class="hljs-string">''</span>.join(format(x,<span class="hljs-string">'02x'</span>) <span class="hljs-keyword">for</span> x <span class="hljs-keyword">in</span> bytearray(ctx.read()))
+
+response.write(hexed_data)
+response.close()</code></pre>
+
+    <p>Należy uważać na strukturę katalogów, z poszczególnymi elementami funkcji - tj. źródłami youtube-dl. Musi ona wyglądać tak:</p>
+
+    <pre><code class="hljs bash">(root)
+|   run.py
+|   function.json
+|
++--- youtube_dl         // cały katalog z GIT
+    |   YoutubeDL.py
+    |   ...             // pozostałe pliki
+    |
+    +--- downloader
+    +--- extractor
+    +--- postprocessor</code></pre>
+
+    <p>
+        Istnieją co najmniej dwa sposoby jak wrzucić zawartość katalogu "youtube_dl".
+    </p>
+
+    <ul>
+        <li>W ustawieniach wszystkich funkcji, na zakładce <strong>Overview</strong> klikamy <strong>Download publish profile</strong> i z niego wyciągamy namiary na FTP, login i hasło</li>
+        <li>W ustawieniach wszystkich funkcji, na zakładce <strong>Platform features</strong> klikamy <strong>Deployment credentials</strong> i tam ustawiamy login i hasło dostępowe do FTP. Namiar na serwer FTP jest już jednak w innej zakładce - <strong>Properties</strong></li>
+    </ul>
+
+    <p>
+        Funkcję warto pozostawić zabezpieczoną kluczem API aby nikt niepowołany nie mógł z niej korzystać - <strong>Authorization level: Function</strong> w drzewku <strong>Integrate</strong>.
+    </p>
+
+    <a id="FN2FunkcjaprzelotkawC"></a>
+<h3>FN_2: Funkcja-przelotka w C#</h3>
+
+    <p>
+        W związku z problemem funkcji w Python (nie można zwrócić ciągu binarnego) należy stworzyć funkcję przelotkę, która zamieni szesnastkowy ciąg znaków na ciąg bajtów.
+    </p>
+
+    <p>
+        Funkcja oferuje API w postaci wywołania poniższego wywołania. Po wejściu na ten link przeglądarka internetowa Chrome po kilku-kilkunastu sekundach (czas zależny od przetwarzania przez youtube-dl) zacznie odtwarzać muzykę.
+    </p>
+
+    <pre><code class="hljs bash">https://....azurewebsites.net/api/fn_name?vid={URL_FILMU}</code></pre>
+
+    <p>
+        Nie należy zapomnieć o ustawieniu poniższych elementów w kodzie:
+    </p>
+
+    <ul>
+        <li><strong>klucz_api_do_funkcji_w_pythonie</strong> - klucz API do funkcji z youtube-dl</li>
+        <li><strong>adres_www_funkcji_w_pythonie</strong> - adres URL funkcji z youtube-dl</li>
+    </ul>
+
+    <pre><code class="hljs cs"><span class="hljs-comment">// plik ./run.csx</span>
+<span class="hljs-comment">//</span>
+<span class="hljs-keyword">using</span> System.Net;
+<span class="hljs-keyword">using</span> System;
+<span class="hljs-keyword">using</span> System.IO;
+<span class="hljs-keyword">using</span> System.Net.Http;
+<span class="hljs-keyword">using</span> System.Text;
+<span class="hljs-keyword">using</span> System.Threading.Tasks;
+
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">async</span> Task&lt;HttpResponseMessage&gt; <span class="hljs-title">Run</span>(<span class="hljs-params">HttpRequestMessage req, TraceWriter log</span>)
+</span>{
+    log.Info(<span class="hljs-string">"C# HTTP trigger function processed a request."</span>);
+
+    <span class="hljs-keyword">string</span> vid = req.GetQueryNameValuePairs()
+        .FirstOrDefault(q =&gt; <span class="hljs-keyword">string</span>.Compare(q.Key, <span class="hljs-string">"vid"</span>, <span class="hljs-literal">true</span>) == <span class="hljs-number">0</span>)
+        .Value;
+
+    <span class="hljs-comment">// Get request body</span>
+    <span class="hljs-keyword">dynamic</span> data = <span class="hljs-keyword">await</span> req.Content.ReadAsAsync&lt;<span class="hljs-keyword">object</span>&gt;();
+
+    <span class="hljs-comment">// Set name to query string or body data</span>
+    vid = vid ?? data?.vid;
+
+    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">string</span>.IsNullOrEmpty(vid))
+        <span class="hljs-keyword">return</span> req.CreateResponse(HttpStatusCode.BadRequest, <span class="hljs-string">"No url!"</span>);
+
+    log.Info(<span class="hljs-string">"vid="</span> + vid);
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">await</span> hexy2webmAsync(vid);
+}
+
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">byte</span>[] <span class="hljs-title">StringToByteArray</span>(<span class="hljs-params">String hex</span>)
+</span>{
+    <span class="hljs-keyword">int</span> NumberChars = hex.Length;
+    <span class="hljs-keyword">byte</span>[] bytes = <span class="hljs-keyword">new</span> <span class="hljs-keyword">byte</span>[NumberChars / <span class="hljs-number">2</span>];
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; NumberChars; i += <span class="hljs-number">2</span>)
+        bytes[i / <span class="hljs-number">2</span>] = Convert.ToByte(hex.Substring(i, <span class="hljs-number">2</span>), <span class="hljs-number">16</span>);
+    <span class="hljs-keyword">return</span> bytes;
+}
+
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">async</span> Task&lt;HttpResponseMessage&gt; <span class="hljs-title">hexy2webmAsync</span>(<span class="hljs-params"><span class="hljs-keyword">string</span> url</span>)
+</span>{
+    url = url.Replace(<span class="hljs-string">"\""</span>, <span class="hljs-string">"&amp;quot;"</span>);
+    HttpClient cli = <span class="hljs-keyword">new</span> HttpClient();
+    cli.DefaultRequestHeaders.Add(
+        <span class="hljs-string">"x-functions-key"</span>, 
+        <span class="hljs-string">"klucz_api_do_funkcji_w_pythonie"</span>
+        );
+    StringContent strc = <span class="hljs-keyword">new</span> StringContent(
+        <span class="hljs-string">$"{{\"rurl\": \"<span class="hljs-subst">{url}</span>\"}}"</span>,
+        Encoding.UTF8,
+        <span class="hljs-string">"application/json"</span>
+        );
+    <span class="hljs-keyword">var</span> resp = <span class="hljs-keyword">await</span> cli.PostAsync(<span class="hljs-string">"adres_www_funkcji_w_pythonie"</span>, strc);
+    <span class="hljs-keyword">if</span> (resp.IsSuccessStatusCode)
+    {
+        HttpResponseMessage webmRes = <span class="hljs-keyword">new</span> HttpResponseMessage(System.Net.HttpStatusCode.OK);
+        
+        <span class="hljs-keyword">int</span> len = <span class="hljs-number">4096</span>;
+        <span class="hljs-keyword">byte</span>[] buff = <span class="hljs-keyword">new</span> <span class="hljs-keyword">byte</span>[len];
+        MemoryStream ms = <span class="hljs-keyword">new</span> MemoryStream();
+
+        <span class="hljs-keyword">using</span> (BinaryReader r = <span class="hljs-keyword">new</span> BinaryReader(<span class="hljs-keyword">await</span> resp.Content.ReadAsStreamAsync()))
+        {
+            <span class="hljs-comment">// strumień zaczyna się od apostrofa</span>
+            <span class="hljs-keyword">if</span> (<span class="hljs-string">'"'</span> != r.ReadChar()) <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> Exception(<span class="hljs-string">"err fmt 1"</span>);
+
+            <span class="hljs-keyword">int</span> c;
+            <span class="hljs-keyword">while</span> (<span class="hljs-number">0</span> &lt; (c = r.Read(buff, <span class="hljs-number">0</span>, len)))
+            {
+                <span class="hljs-comment">// strumień zakończy się apostrofem dlatego taki skrót myślowy</span>
+                <span class="hljs-keyword">if</span> (<span class="hljs-number">1</span> == c % <span class="hljs-number">2</span>)
+                    c--;
+                <span class="hljs-keyword">string</span> hexy = Encoding.ASCII.GetString(buff, <span class="hljs-number">0</span>, c);
+                <span class="hljs-keyword">byte</span>[] data = StringToByteArray(hexy);
+                ms.Write(data, <span class="hljs-number">0</span>, data.Length);
+            }
+        }
+
+        ms.Position = <span class="hljs-number">0</span>;
+        webmRes.Content = <span class="hljs-keyword">new</span> StreamContent(ms);
+        webmRes.Content.Headers.ContentType = <span class="hljs-keyword">new</span> System.Net.Http.Headers.MediaTypeHeaderValue(<span class="hljs-string">"audio/webm"</span>);
+        <span class="hljs-keyword">return</span> webmRes;
+    }
+
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> HttpResponseMessage(System.Net.HttpStatusCode.ServiceUnavailable);
+}</code></pre>
+
+    <a id="OdtwarzaczmuzykiwHTML5"></a>
+<h3>Odtwarzacz muzyki w HTML5</h3>
+
+    <p>
+        Pod Chrome lub Edge można napisać prosty odtwarzacz korzystając z tagu <strong>&lt;audio/&gt;</strong> choć poniższa odpowiedź z przeglądarki nie zachęca
+    </p>
+
+    <pre><code class="hljs bash">// zmienna <span class="hljs-string">'audio'</span> to referencja na element DOM audio
+&gt; audio.canPlayType(<span class="hljs-string">"audio/webm"</span>)
+<span class="hljs-string">"maybe"</span></code></pre>
+
+    <p>
+        Pomijając szczegóły warstwy prezentacji w HTML warto nakreślić tylko sposoby pobierania muzyki - bezpośrednie albo za pomocą zapytań AJAXowych w JavaScript (Blob lub ArrayBuffer)
+    </p>
+
+    <ul>
+        <li><strong>audio - source.src=...</strong> - bezpośrednie przypisanie atrybutu <strong>src</strong> w hierarchii tagu &lt;audio/&gt; jest jednym z rozwiązań ale niezbyt optymalnym gdyż Chrome potrafi przy przewijaniu suwaka czasu poprosić raz jeszcze serwer o zawartość i znów czekamy kilka sekund aż youtube-dl pobierze plik na nowo. Lepiej zatem pobrać i zbuforować.</li>
+        <li><strong>ArrayBuffer</strong> - nie można go podłączyć bezpośrednio pod element &lt;audio/&gt;. Nie ma problemu jednak aby używać go do odtwarzania w tle bez użycia standardowych kontrolek z tagu &lt;audio/&gt;. Użycie <code>loadBackgroundAudio(source);</code></li>
+        <li><strong>Blob</strong> - jest to format dla którego można wygenerować unikalnego lokalnego dla przeglądarki URLa i przekazać do odtwarzania. Dzięki temu nie ma już problemu z próbami Chrome ponownego pobierania zawartości przez internet - teraz pobiera lokalnie z pamięci. Użycie <code>buggedChromeBlob(audio, audioUrl1);</code></li>
+    </ul>
+
+    <pre><code class="hljs javascript"><span class="hljs-keyword">var</span> api = <span class="hljs-built_in">document</span>.querySelector(<span class="hljs-string">"#api"</span>),
+    music = <span class="hljs-built_in">document</span>.querySelector(<span class="hljs-string">"#music"</span>),
+    audio = <span class="hljs-built_in">document</span>.querySelector(<span class="hljs-string">"#player"</span>),
+    load = <span class="hljs-built_in">document</span>.querySelector(<span class="hljs-string">"#load"</span>),
+    ctx = <span class="hljs-keyword">new</span> (<span class="hljs-built_in">window</span>.AudioContext || <span class="hljs-built_in">window</span>.webkitAudioContext)();
+
+<span class="hljs-keyword">var</span> gArrayBuffer = <span class="hljs-literal">undefined</span>,
+    gBlobBuffer = <span class="hljs-literal">undefined</span>,
+    gBlobUrl = <span class="hljs-literal">undefined</span>;
+
+<span class="hljs-keyword">var</span> audioUrl1 = <span class="hljs-string">'https://....azurewebsites.net/api/fn_name?vid={URL_FILMU}'</span>;
+<span class="hljs-keyword">var</span> audioUrl2 = <span class="hljs-string">'http://upload.wikimedia.org/wikipedia/commons/a/aa/White_noise.ogg'</span>;
+
+<span class="hljs-keyword">var</span> source = ctx.createBufferSource();
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">xhr</span>(<span class="hljs-params">url, dataType, cb</span>) </span>{        
+    <span class="hljs-keyword">var</span> x = <span class="hljs-keyword">new</span> XMLHttpRequest();
+    x.open(<span class="hljs-string">'GET'</span>, url, <span class="hljs-literal">true</span>);
+    x.responseType = dataType; <span class="hljs-comment">// blob|arraybuffer</span>
+    x.onload = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">_onload</span>(<span class="hljs-params"></span>) </span>{
+        cb(<span class="hljs-literal">null</span>, x.response);
+    };
+    x.onerror = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">_onerror</span>(<span class="hljs-params"></span>) </span>{
+        cb(<span class="hljs-string">'err'</span>);
+    }
+    <span class="hljs-keyword">try</span> {
+        x.send();
+    } <span class="hljs-keyword">catch</span> (err) {
+    }
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">loadBackgroundAudio</span>(<span class="hljs-params">audioSource</span>) </span>{
+    xhr(audioUrl1, <span class="hljs-string">'arraybuffer'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">_bgAudio</span>(<span class="hljs-params">err, buffer</span>) </span>{
+        <span class="hljs-keyword">if</span> (err) 
+            <span class="hljs-keyword">return</span>;
+        ctx.decodeAudioData(buffer, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">_decodeCb</span>(<span class="hljs-params">audioBuffer</span>) </span>{
+            gArrayBuffer = audioBuffer;
+            audioSource.buffer = audioBuffer;
+            audioSource.connect(ctx.destination);
+            <span class="hljs-comment">//audioSource.loop = true;</span>
+            audioSource.start(<span class="hljs-number">0</span>); <span class="hljs-comment">// Failed to execute 'start' on 'AudioBufferSourceNode': cannot call start more than once.</span>
+        });
+    });
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">buggedChromeBlob</span>(<span class="hljs-params">audioControl, audioUrl, cb</span>) </span>{
+    xhr(audioUrl, <span class="hljs-string">'blob'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">_chrBlob</span>(<span class="hljs-params">err, blob</span>) </span>{
+        <span class="hljs-keyword">if</span> (err) {
+            <span class="hljs-keyword">if</span> (cb) cb();
+            alert(<span class="hljs-string">'err'</span>);
+            <span class="hljs-keyword">return</span>;
+        }
+        <span class="hljs-keyword">if</span> (gBlobUrl) {
+            URL.revokeObjectURL(gBlobUrl);
+            gBlobUrl = <span class="hljs-literal">undefined</span>;
+        }
+        gBlobBuffer = blob;
+        gBlobUrl = URL.createObjectURL(blob);
+        setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">_tout</span>(<span class="hljs-params"></span>) </span>{
+            audioControl.src = gBlobUrl;
+            <span class="hljs-comment">//audioControl.load();</span>
+            audioControl.play();
+            <span class="hljs-keyword">if</span> (cb) cb();
+        },<span class="hljs-number">10</span>); <span class="hljs-comment">// setTimeout rozwiązuje problem z nieodtwarzaniem WEBM w Chrome. W Edge jest ok.</span>
+    });
+}
+
+<span class="hljs-comment">//loadBackgroundAudio(source);</span>
+buggedChromeBlob(audio, audioUrl1);</code></pre>
+
+    <a id="WystawianieodtwarzaczaHTMLnawiat"></a>
+<h3>Wystawianie odtwarzacza HTML na świat</h3>
+
+    <p>
+        Najprostszym sposobem umieszczenia odtwarzacza jest stworzenie strony internetowej w pliku .html i wrzucenie jej jako <strong>blob</strong> przez Azure Storage.
+    </p>
+
+    <p>
+        W takim przypadku należy pamiętać aby adres hosta dodać do CORS funkcji Azure bo inaczej przeglądarka będzie odrzucać odpowiedzi jako nie posiadające prawidłowego nagłówka <strong>Access-Control-Allow-Origin</strong>. Ustawienie to znajduje się na zakładce <strong>Platform features</strong> i opcji <strong>CORS</strong>.
+    </p>
+
+    <a id="Miegosuchaniawtrybieoffline"></a>
+<h3>Miłego słuchania w trybie offline!</h3>
+
+    <p>... po umieszczeniu w/w treści na swoim koncie Azure.</p>
+
+</div>
+    </section>
+</body>
+</html>

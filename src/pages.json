@@ -17,6 +17,12 @@
     },
     "pages" : [
         {
+            "name" : "yt-black-azure-function",
+            "title" : "YouTube, czarny ekran, Azure Functions",
+            "description" : "Odtwarzacz muzyki z serwisów wideo za pomocą Azure Functions",
+            "date" : "2017-10-30"
+        },
+        {
             "name" : "ef-core-migracje",
             "title" : "EntityFramework Core - migracje bez dodatków",
             "description" : "EntityFramework Core - migracje baz bez dodatków narzędzi linii poleceń dotnet-ef czy PowerShella",

@@ -1,0 +1,361 @@
+<div>
+    <h3>Serwis "muzyczny" YouTube ... offline?</h3>
+
+    <p>
+        Na YouTube znajdują się praktycznie wszystkie teledyski utworów muzycznych. Żeby jednak tylko posłuchać fajnej muzyki, korzystając np. ze smartfona, ekran musi się świecić. Wygaszenie ekranu spowoduje zatrzymanie odtwarzania przez aplikację YouTube.
+    </p>
+
+    <p>
+        Z pomocą przychodzi aplikacja <a href="https://github.com/rg3/youtube-dl/" target="_blank" rel="nofollow">youtube-dl</a>. W aplikacji można wskazać, że interesuje nas tylko ścieżka muzyczna (flaga <code>-f numer_formatu</code>). Potem trzeba przerzucić plik na telefon, itd., itd. 
+    </p>
+
+    <h3>Ale, ale!</h3>
+
+    <ul>
+        <li>Czy przypadkiem youtube-dl nie jest napisany w Python?</li>
+        <li>Czy Azure Functions nie zaczęło ostatnio obsługiwać Pythona? (Wsparcie jest jeszcze marne, ale wystarczy - <a href="https://github.com/Azure/azure-webjobs-sdk-script/issues/335" target="_blank" rel="nofollow">Feature planning: first class Python support #335</a></li>
+    </ul>
+
+    <h3>FN_1: Przeniesienie youtube-dl do chmury</h3>
+
+    <p>
+        Youtube-dl został dostosowany tak (na początku tak nie było) aby można było praktycznie korzystać z niego jak z biblioteki oferującej pewien zestaw API. Dlatego wystarczy rozpisać klasę dziedziczącą z <code>YoutubeDL</code> i trochę kodu dla Azure Functions.
+    </p>
+
+    <p>
+        Oczywiście nie jest tak różowo bo funkcje Azure napisane w Pythonie potrafią zwracać tylko ciągi znaków i to jeszcze w cudzysłowach! Dlatego rozwiązaniem na szybko jest zwykła konwersja muzyki w formacie WEBM na ciąg znaków w formacie szesnastkowym. Czyli wynikiem działania funkcji będzie ciąg wyglądający mniej więcej tak jak poniżej (tak, cudzysłowy też będą).
+    </p>
+
+    %%%#code_bash^
+"FAC3..."
+    #%%%
+
+    <p>
+        Poniżej znajduje się implementacja funkcji pobierającej muzykę w formacie WEBM.
+    </p>
+
+    %%%#code_python^
+# plik ./run.py
+#
+import os
+import io
+import json
+import urllib2
+
+from youtube_dl import YoutubeDL
+
+class YDL(YoutubeDL):
+    def __init__(self, *args, **kwargs):
+        super(YDL, self).__init__(*args, **kwargs)
+
+        self.jsonMsg = None
+
+    def to_screen(self, msg, skip_eol=False):
+        pass
+
+    def report_warning(self, msg):
+        pass
+
+    def to_stdout(self, msg, skip_eol=False, check_quiet=False):
+        # youtube-dl podczas działania rzuca różnymi śmieciami
+        # nas interesuje tylko JSON wyzwolony flagą 'dump_single_json'
+        if msg.startswith('{"'):
+            self.jsonMsg = msg
+
+
+def getRawUrl(urly):
+    ydl = YDL({
+        'simulate': True,
+        'quiet': True,
+        'dump_single_json': True
+        })
+
+    all_urls = [urly]
+
+    # uruchomienie youtube-dl
+    ydl.download(all_urls)
+
+    # jeśli pojawił się JSON to wybieramy pierwszą ścieżkę WEBM
+    if ydl.jsonMsg != None:
+        cfg = json.loads ( ydl.jsonMsg )
+        for fmt in cfg.get('formats', None):
+            if 'webm' != fmt.get('ext', None):
+                continue
+            urlm = fmt.get('url', None)
+            return urlm
+            break
+
+# standardowy kod z przykładu nowej funkcji Azure w Python...
+postreqdata = json.loads(open(os.environ['req']).read())
+
+rurl = postreqdata['rurl']
+print ("getting url nfo", rurl)
+wurl = getRawUrl(rurl)
+os_res = os.environ['res']
+print('os_res', type(os_res), os_res)
+response = open(os_res, 'wb')
+
+# problem niestety jest taki, że funkcja Azure zwraca zawsze
+# tylko ciąg znaków otoczony cudzysłowami niezależnie od tego
+# czy strumień 'response' jest wskazany jako binarny ('wb')
+
+ctx = urllib2.urlopen(wurl)
+
+# konwersja binarnej zawartości na ciąg szesnastkowy...
+hexed_data = ''.join(format(x,'02x') for x in bytearray(ctx.read()))
+
+response.write(hexed_data)
+response.close()
+    #%%%
+
+    <p>Należy uważać na strukturę katalogów, z poszczególnymi elementami funkcji - tj. źródłami youtube-dl. Musi ona wyglądać tak:</p>
+
+    %%%#code_bash^
+(root)
+|   run.py
+|   function.json
+|
++--- youtube_dl         // cały katalog z GIT
+    |   YoutubeDL.py
+    |   ...             // pozostałe pliki
+    |
+    +--- downloader
+    +--- extractor
+    +--- postprocessor
+
+    #%%%
+
+    <p>
+        Istnieją co najmniej dwa sposoby jak wrzucić zawartość katalogu "youtube_dl".
+    </p>
+
+    <ul>
+        <li>W ustawieniach wszystkich funkcji, na zakładce <strong>Overview</strong> klikamy <strong>Download publish profile</strong> i z niego wyciągamy namiary na FTP, login i hasło</li>
+        <li>W ustawieniach wszystkich funkcji, na zakładce <strong>Platform features</strong> klikamy <strong>Deployment credentials</strong> i tam ustawiamy login i hasło dostępowe do FTP. Namiar na serwer FTP jest już jednak w innej zakładce - <strong>Properties</strong></li>
+    </ul>
+
+    <p>
+        Funkcję warto pozostawić zabezpieczoną kluczem API aby nikt niepowołany nie mógł z niej korzystać - <strong>Authorization level: Function</strong> w drzewku <strong>Integrate</strong>.
+    </p>
+
+    <h3>FN_2: Funkcja-przelotka w C#</h3>
+
+    <p>
+        W związku z problemem funkcji w Python (nie można zwrócić ciągu binarnego) należy stworzyć funkcję przelotkę, która zamieni szesnastkowy ciąg znaków na ciąg bajtów.
+    </p>
+
+    <p>
+        Funkcja oferuje API w postaci wywołania poniższego wywołania. Po wejściu na ten link przeglądarka internetowa Chrome po kilku-kilkunastu sekundach (czas zależny od przetwarzania przez youtube-dl) zacznie odtwarzać muzykę.
+    </p>
+
+    %%%#code_bash^
+https://....azurewebsites.net/api/fn_name?vid={URL_FILMU}
+    #%%%
+
+    <p>
+        Nie należy zapomnieć o ustawieniu poniższych elementów w kodzie:
+    </p>
+
+    <ul>
+        <li><strong>klucz_api_do_funkcji_w_pythonie</strong> - klucz API do funkcji z youtube-dl</li>
+        <li><strong>adres_www_funkcji_w_pythonie</strong> - adres URL funkcji z youtube-dl</li>
+    </ul>
+
+    %%%#code_cs^
+// plik ./run.csx
+//
+using System.Net;
+using System;
+using System.IO;
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
+
+public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, TraceWriter log)
+{
+    log.Info("C# HTTP trigger function processed a request.");
+
+    string vid = req.GetQueryNameValuePairs()
+        .FirstOrDefault(q => string.Compare(q.Key, "vid", true) == 0)
+        .Value;
+
+    // Get request body
+    dynamic data = await req.Content.ReadAsAsync<object>();
+
+    // Set name to query string or body data
+    vid = vid ?? data?.vid;
+
+    if (string.IsNullOrEmpty(vid))
+        return req.CreateResponse(HttpStatusCode.BadRequest, "No url!");
+
+    log.Info("vid=" + vid);
+    return await hexy2webmAsync(vid);
+}
+
+public static byte[] StringToByteArray(String hex)
+{
+    int NumberChars = hex.Length;
+    byte[] bytes = new byte[NumberChars / 2];
+    for (int i = 0; i < NumberChars; i += 2)
+        bytes[i / 2] = Convert.ToByte(hex.Substring(i, 2), 16);
+    return bytes;
+}
+
+public static async Task<HttpResponseMessage> hexy2webmAsync(string url)
+{
+    url = url.Replace("\"", "&quot;");
+    HttpClient cli = new HttpClient();
+    cli.DefaultRequestHeaders.Add(
+        "x-functions-key", 
+        "klucz_api_do_funkcji_w_pythonie"
+        );
+    StringContent strc = new StringContent(
+        $"{{\"rurl\": \"{url}\"}}",
+        Encoding.UTF8,
+        "application/json"
+        );
+    var resp = await cli.PostAsync("adres_www_funkcji_w_pythonie", strc);
+    if (resp.IsSuccessStatusCode)
+    {
+        HttpResponseMessage webmRes = new HttpResponseMessage(System.Net.HttpStatusCode.OK);
+        
+        int len = 4096;
+        byte[] buff = new byte[len];
+        MemoryStream ms = new MemoryStream();
+
+        using (BinaryReader r = new BinaryReader(await resp.Content.ReadAsStreamAsync()))
+        {
+            // strumień zaczyna się od apostrofa
+            if ('"' != r.ReadChar()) throw new Exception("err fmt 1");
+
+            int c;
+            while (0 < (c = r.Read(buff, 0, len)))
+            {
+                // strumień zakończy się apostrofem dlatego taki skrót myślowy
+                if (1 == c % 2)
+                    c--;
+                string hexy = Encoding.ASCII.GetString(buff, 0, c);
+                byte[] data = StringToByteArray(hexy);
+                ms.Write(data, 0, data.Length);
+            }
+        }
+
+        ms.Position = 0;
+        webmRes.Content = new StreamContent(ms);
+        webmRes.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("audio/webm");
+        return webmRes;
+    }
+
+    return new HttpResponseMessage(System.Net.HttpStatusCode.ServiceUnavailable);
+}
+    #%%%
+
+    <h3>Odtwarzacz muzyki w HTML5</h3>
+
+    <p>
+        Pod Chrome lub Edge można napisać prosty odtwarzacz korzystając z tagu <strong>&lt;audio/&gt;</strong> choć poniższa odpowiedź z przeglądarki nie zachęca
+    </p>
+
+    %%%#code_bash^
+// zmienna 'audio' to referencja na element DOM audio
+> audio.canPlayType("audio/webm")
+"maybe"
+    #%%%
+
+    <p>
+        Pomijając szczegóły warstwy prezentacji w HTML warto nakreślić tylko sposoby pobierania muzyki - bezpośrednie albo za pomocą zapytań AJAXowych w JavaScript (Blob lub ArrayBuffer)
+    </p>
+
+    <ul>
+        <li><strong>audio - source.src=...</strong> - bezpośrednie przypisanie atrybutu <strong>src</strong> w hierarchii tagu &lt;audio/&gt; jest jednym z rozwiązań ale niezbyt optymalnym gdyż Chrome potrafi przy przewijaniu suwaka czasu poprosić raz jeszcze serwer o zawartość i znów czekamy kilka sekund aż youtube-dl pobierze plik na nowo. Lepiej zatem pobrać i zbuforować.</li>
+        <li><strong>ArrayBuffer</strong> - nie można go podłączyć bezpośrednio pod element &lt;audio/&gt;. Nie ma problemu jednak aby używać go do odtwarzania w tle bez użycia standardowych kontrolek z tagu &lt;audio/&gt;. Użycie <code>loadBackgroundAudio(source);</code></li>
+        <li><strong>Blob</strong> - jest to format dla którego można wygenerować unikalnego lokalnego dla przeglądarki URLa i przekazać do odtwarzania. Dzięki temu nie ma już problemu z próbami Chrome ponownego pobierania zawartości przez internet - teraz pobiera lokalnie z pamięci. Użycie <code>buggedChromeBlob(audio, audioUrl1);</code></li>
+    </ul>
+
+    %%%#code_js^
+var api = document.querySelector("#api"),
+    music = document.querySelector("#music"),
+    audio = document.querySelector("#player"),
+    load = document.querySelector("#load"),
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+var gArrayBuffer = undefined,
+    gBlobBuffer = undefined,
+    gBlobUrl = undefined;
+
+var audioUrl1 = 'https://....azurewebsites.net/api/fn_name?vid={URL_FILMU}';
+var audioUrl2 = 'http://upload.wikimedia.org/wikipedia/commons/a/aa/White_noise.ogg';
+
+var source = ctx.createBufferSource();
+
+function xhr(url, dataType, cb) {        
+    var x = new XMLHttpRequest();
+    x.open('GET', url, true);
+    x.responseType = dataType; // blob|arraybuffer
+    x.onload = function _onload() {
+        cb(null, x.response);
+    };
+    x.onerror = function _onerror() {
+        cb('err');
+    }
+    try {
+        x.send();
+    } catch (err) {
+    }
+}
+
+function loadBackgroundAudio(audioSource) {
+    xhr(audioUrl1, 'arraybuffer', function _bgAudio(err, buffer) {
+        if (err) 
+            return;
+        ctx.decodeAudioData(buffer, function _decodeCb(audioBuffer) {
+            gArrayBuffer = audioBuffer;
+            audioSource.buffer = audioBuffer;
+            audioSource.connect(ctx.destination);
+            //audioSource.loop = true;
+            audioSource.start(0); // Failed to execute 'start' on 'AudioBufferSourceNode': cannot call start more than once.
+        });
+    });
+}
+
+function buggedChromeBlob(audioControl, audioUrl, cb) {
+    xhr(audioUrl, 'blob', function _chrBlob(err, blob) {
+        if (err) {
+            if (cb) cb();
+            alert('err');
+            return;
+        }
+        if (gBlobUrl) {
+            URL.revokeObjectURL(gBlobUrl);
+            gBlobUrl = undefined;
+        }
+        gBlobBuffer = blob;
+        gBlobUrl = URL.createObjectURL(blob);
+        setTimeout(function _tout() {
+            audioControl.src = gBlobUrl;
+            //audioControl.load();
+            audioControl.play();
+            if (cb) cb();
+        },10); // setTimeout rozwiązuje problem z nieodtwarzaniem WEBM w Chrome. W Edge jest ok.
+    });
+}
+
+//loadBackgroundAudio(source);
+buggedChromeBlob(audio, audioUrl1);
+    #%%%
+
+    <h3>Wystawianie odtwarzacza HTML na świat</h3>
+
+    <p>
+        Najprostszym sposobem umieszczenia odtwarzacza jest stworzenie strony internetowej w pliku .html i wrzucenie jej jako <strong>blob</strong> przez Azure Storage.
+    </p>
+
+    <p>
+        W takim przypadku należy pamiętać aby adres hosta dodać do CORS funkcji Azure bo inaczej przeglądarka będzie odrzucać odpowiedzi jako nie posiadające prawidłowego nagłówka <strong>Access-Control-Allow-Origin</strong>. Ustawienie to znajduje się na zakładce <strong>Platform features</strong> i opcji <strong>CORS</strong>.
+    </p>
+
+    <h3>Miłego słuchania w trybie offline!</h3>
+
+    <p>... po umieszczeniu w/w treści na swoim koncie Azure.</p>
+
+</div>
