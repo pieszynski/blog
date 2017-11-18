@@ -17,6 +17,12 @@
     },
     "pages" : [
         {
+            "name" : "dlaczego-aplikacja-nie-chce-sie-zamknac",
+            "title" : "Dlaczego aplikacja nie chce się zamknąć?",
+            "description" : "Czasami jest tak, że aplikacja powinna się zamknąć a tak się nie dzieje. Dlaczego?",
+            "date" : "2017-11-18"
+        },
+        {
             "name" : "yt-black-azure-function",
             "title" : "YouTube, czarny ekran, Azure Functions",
             "description" : "Odtwarzacz muzyki z serwisów wideo za pomocą Azure Functions",

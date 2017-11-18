@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Przemysław Pieszyński. Programista.">
+    <meta name="author" content="Przemysław Pieszyński">
+    <title>Pieszyński Blog - pieszynski.com</title>
+
+    <link href="/favicon.png" rel="shortcut icon" />
+    <link href="/favicon.png" rel="icon" />
+
+    <link href="/feed.rss" rel="alternate" type="application/rss+xml" title="pieszynski.com - co nowego?" />
+
+    <link rel="me" type="text/html" href="https://twitter.com/pieszynski"/> 
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:site" content="@pieszynski" />
+    <meta name="twitter:title" content="Dlaczego aplikacja nie chce się zamknąć?" />
+    <meta name="twitter:description" content="Czasami jest tak, że aplikacja powinna się zamknąć a tak się nie dzieje. Dlaczego?" />
+    <meta name="twitter:image" content="http://pieszynski.com/favicon.png" />
+
+    <!--<link href="/feed.rss" rel="alternate" type="application/rss+xml" title="pieszynski.com - co nowego?" />-->
+    <meta name="theme-color" content="#157878" />
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700" rel="stylesheet" />
+    <link href="/css/cayman.css" rel="stylesheet" />
+    <link href="/css/highlight.min.css" rel="stylesheet" />
+    <link href="/css/style.css" rel="stylesheet" />
+
+    <script type="text/javascript" src="/js/vendor/jquery.min.js"></script>
+    <script type="text/javascript" src="/js/vendor/angular.min.js"></script>
+    <script type="text/javascript" src="/js/vendor/underscore-min.js"></script>
+    <script type="text/javascript" src="/js/vendor/underscore.string.min.js"></script>
+    <script type="text/javascript" src="/js/layout.js"></script>
+    <script type="text/javascript" src="/js/menuCtrl.js"></script>
+</head>
+<body ng-app="appRoot" ng-controller="rootCtrl as root">
+    <section class="page-header">
+        
+        <h1 class="project-name">Dlaczego aplikacja nie chce się zamknąć?</h1>
+        <h2 class="project-tagline">Czasami jest tak, że aplikacja powinna się zamknąć a tak się nie dzieje. Dlaczego?</h2>
+
+        <!--<a href="https://github.com/pages-themes/cayman" class="btn">View on GitHub</a>-->   
+
+        <div class="menu-btn-hook" ng-controller="menuCtrl as menu">
+            <div class="menu-btn menu-btn-main menu-btn-shadow" ng-click="menu.toggle()">
+                <div>i</div>
+            </div>
+            <div class="menu-btn menu-btn-sub" ng-click="menu.close()">
+                <a href="/"><div>&#8592;</div></a>
+            </div>
+        </div>
+    </section>
+    <section class="main-content">
+        <div>
+    <h3>Spis treści</h3><ol class="toc"><li><a href="#Helloworldktresiniekoczy">Hello world, które się nie kończy</a></li><li><a href="#Jaknamierzywtkiuruchomionejakoniewtle">Jak namierzyć wątki uruchomione jako "nie w tle"</a></li><li><a href="#Brakkorelacji11dlaSysThIDiMgtThID">Brak korelacji 1:1 dla Sys_ThID i Mgt_ThID</a></li><li><a href="#CojelimamywskaniknainstancjThread">Co jeśli mamy wskaźnik na instancję Thread?</a></li><li><a href="#AmoeWinDbg">A może WinDbg?</a></li><li><a href="#ClrMD">ClrMD</a></li><li><a href="#CiekawostkaXSharperCore">Ciekawostka - XSharper.Core</a></li></ol>
+<a id="Helloworldktresiniekoczy"></a>
+<h3>Hello world, które się nie kończy</h3>
+
+    <p>Czasami jest tak, że aplikacja powinna się zamknąć gdy kończymy działanie głównego wątku ale tak się nie dzieje. Choćby ta poniższa:</p>
+
+    <pre><code class="hljs cs"><span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Main</span>(<span class="hljs-params"><span class="hljs-keyword">string</span>[] args</span>)
+</span>{
+    CiekawaFunkcja();
+    Console.WriteLine(<span class="hljs-string">"Hello world. Koniec."</span>);
+}</code></pre>
+
+    <p>"Problemem" jest <code>CiekawaFunkcja()</code>, której zawartość może wyglądać następująco:</p>
+
+    <pre><code class="hljs cs"><span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">CiekawaFunkcja</span>(<span class="hljs-params"></span>)
+</span>{
+    AutoResetEvent evt = <span class="hljs-keyword">new</span> AutoResetEvent(<span class="hljs-literal">false</span>);
+    Thread th = <span class="hljs-keyword">new</span> Thread(state =&gt;
+    {
+        evt.WaitOne();
+    });
+    th.IsBackground = <span class="hljs-literal">false</span>;
+    th.Start();
+}</code></pre>
+
+    <p>Znajduje się tam parametr <code>IsBackground = false</code>, który powoduje, że proces nie może zostać automatycznie zamknięty. Proces nie zostanie zamknięty dopóki zawiera aktywne wątki nie w tle. Zgodnie z dokumentacją <a href="https://msdn.microsoft.com/en-us/library/system.threading.thread.isbackground(v=vs.110).aspx" rel="nofollow" target="_blank">MSDN</a> wątek startuje domyślnie jako:</p>
+
+    <ul>
+        <li><strong>Nie w tle</strong> - gdy jest to główny wątek aplikacji</li>
+        <li><strong>Nie w tle</strong> - gdy użyto konstruktora <code>Thread()</code></li>
+        <li><strong>W tle</strong> - gdy wątek pochodzi z puli wątków (<code>ThreadPool</code>)</li>
+        <li><strong>W tle</strong> - wątki powołane z <code>async/await</code> bo pochodzą z puli wątków</li>
+        <li><strong>W tle</strong> - wątki nie zarządzalne/natywne, które są używane w kodzie zarządzalnym</li>
+    </ul>
+
+    <p>Dlatego należy zawsze pamiętać aby tworząc nowy wątek ustawiać pole <code>IsBackground = true</code>!</p>
+
+    <p>Namierzenie takiej sytuacji może okazać się nietrywialne bo przeszukanie całego projektu pod względem wystąpienia słowa "IsBackground" lub "Thread" nie zwróci żadnych wyników. Nie znaczy to jednak, że któraś z użytych bibliotek tego nie robi.</p>
+
+    <a id="Jaknamierzywtkiuruchomionejakoniewtle"></a>
+<h3>Jak namierzyć wątki uruchomione jako "nie w tle"</h3>
+
+    <p>Sprawa jest nietrywialna gdyż w .NET nie ma czegoś takiego jak wylistowanie wszystkich wątków zarządzalnych... Jedyne co istnieje to lista wątków natywnych:</p>
+
+    <pre><code class="hljs cs">Process proc = Process.GetCurrentProcess();
+<span class="hljs-keyword">foreach</span> (ProcessThread thProc <span class="hljs-keyword">in</span> proc.Threads
+    .OfType&lt;ProcessThread&gt;()
+    .OrderBy(o =&gt; o.Id)
+    )
+{
+    <span class="hljs-comment">// Brak pola thProc.ManagedThreadId</span>
+    Console.WriteLine(<span class="hljs-string">$"Sys_ThID = <span class="hljs-subst">{thProc.Id}</span>"</span>);
+}</code></pre>
+
+    <p>Wynik w/w kodu zobrazowany jest poniżej. Lista ID wątków (Sys_ThID) pokrywa się z tym co pokazuje ProcessExplorer ale te liczby ni jak mają się do ID wątku zarządzalnego (Mgt_ThID), który został zwrócony w aplikacji za pomocą metody <code>Thread.CurrentThread.ManagedThreadId</code> dla głównego wątku ("Main") oraz drugiego stworzonego w kodzie ("Nowy").</p>
+
+    <image-info info="Lista wątków natywnych w ProcessExplorerze i wylistowana w aplikacji." src="/img/topic/dlaczego-aplikacja-nie-chce-sie-zamknac/sys_mgt_threads.png"></image-info>
+
+    <a id="Brakkorelacji11dlaSysThIDiMgtThID"></a>
+<h3>Brak korelacji 1:1 dla Sys_ThID i Mgt_ThID</h3>
+
+    <p>Sprawa jest o tyle nieciekawa, że nie można dokonać mapowania 1:1 ID wątku natywnego i zarządzalnego. Wynika to ze specyfiki .NET, gdzie jeden wątek natywny może zawierać kilka wątków zarządzalnych. Dokumentacja MSDN <a href="https://docs.microsoft.com/en-us/dotnet/standard/threading/managed-and-unmanaged-threading-in-windows" rel="nofollow" target="_blank">Managed and Unmanaged Threading in Windows</a> mówi w tym temacie tyle (eng):</p>
+
+    <blockquote>An operating-system ThreadId has no fixed relationship to a managed thread, because an unmanaged host can control the relationship between managed and unmanaged threads. Specifically, a sophisticated host can use the Fiber API to schedule many managed threads against the same operating system thread, or to move a managed thread among different operating system threads.</blockquote>
+
+    <p>Jedyne co można zrobić to z wnętrza wątku zarządzalnego pobrać ID wątku natywnego w importując metodę natywną</p>
+
+    <pre><code class="hljs cs">[DllImport(<span class="hljs-string">"Kernel32"</span>, EntryPoint = <span class="hljs-string">"GetCurrentThreadId"</span>, ExactSpelling = <span class="hljs-literal">true</span>)]
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">extern</span> Int32 <span class="hljs-title">GetCurrentWin32ThreadId</span>(<span class="hljs-params"></span>)</span>;</code></pre>
+
+    <a id="CojelimamywskaniknainstancjThread"></a>
+<h3>Co jeśli mamy wskaźnik na instancję Thread?</h3>
+
+    <p>Nawet jeśli w jakiś sposób mamy wskaźnik na wątek nie w tle to, żeby pobrać stos wywołać - co jest aktualnie wykonywane - należy użyć metod, które w przyszłości mogą nie być dostępne a aktualnie oznaczone są do usunięcia.</p>
+
+    <p>Poniższy kod listuje stos wywołań dla powołanego wątku, który stoi na metodzie <code>AutoResetEvent.WaitOne()</code>.</p>
+
+    <pre><code class="hljs cs"><span class="hljs-comment">// Thread.Suspend has been deprecated.</span>
+<span class="hljs-comment">// Please use other classes in System.Threading, such as Monitor, Mutex, ...</span>
+_th.Suspend();
+<span class="hljs-comment">// This constructor has been deprecated.  </span>
+<span class="hljs-comment">// Please use a constructor that does not require a Thread parameter.</span>
+StackTrace trace = <span class="hljs-keyword">new</span> StackTrace(_th, <span class="hljs-literal">true</span>);
+Console.WriteLine(<span class="hljs-string">$"\nStack dla Mgt_ThID = <span class="hljs-subst">{_th.ManagedThreadId}</span>:"</span>);
+<span class="hljs-keyword">foreach</span> (StackFrame sframe <span class="hljs-keyword">in</span> trace.GetFrames())
+{
+    Console.WriteLine(<span class="hljs-string">"  "</span> + sframe.GetMethod());
+}
+<span class="hljs-comment">// Thread.Resume has been deprecated.</span>
+_th.Resume();</code></pre>    
+
+    <p>Wynik działania:</p>
+
+    <pre><code class="hljs bash">Stack dla Mgt_ThID = 3:
+  Int32 WaitOneNative(System.Runtime.InteropServices.SafeHandle, UInt32, Boolean, Boolean)
+  Boolean InternalWaitOne(System.Runtime.InteropServices.SafeHandle, Int64, Boolean, Boolean)
+  Boolean WaitOne(Int32, Boolean)
+  Boolean WaitOne()
+  Void &lt;StartNonBackgroundThread&gt;b__4_0(System.Object)
+  Void ThreadStart_Context(System.Object)
+  Void RunInternal(System.Threading.ExecutionContext, System.Threading.ContextCallback, System.Object, Boolean)
+  Void Run(System.Threading.ExecutionContext, System.Threading.ContextCallback, System.Object, Boolean)
+  Void Run(System.Threading.ExecutionContext, System.Threading.ContextCallback, System.Object)
+  Void ThreadStart(System.Object)</code></pre>   
+
+    <a id="AmoeWinDbg"></a>
+<h3>A może WinDbg?</h3>
+
+    <p>Jeśli problem można można odtworzyć lokalnie na stacji jeszcze podczas tworzenia kodu nie potrzeba korzystać z niewygodnych w użyciu narzędzi takich jak <strong>WinDbg</strong>.</p>
+
+    <p>Przy WinDbg należy uważać aby aplikacja wykonująca zrzut pamięci działała w tym samym trybie (x86 lub x64) co aplikacja, której zrzut jest wykonywany. Do tego jeszcze trzeba pamiętać aby mieć bibliotekę <code>mscordacwks.dll</code>, która pochodzi z maszyny na której występują problemy. Dodatkowo jeśli takiego debugowania nie robi się często to skonfigurowanie narzędzi i ich użycie to koszmar.</p>
+
+    <a id="ClrMD"></a>
+<h3>ClrMD</h3>
+
+    <p>Z pomocą przychodzi narzędzie <a href="https://github.com/Microsoft/clrmd" rel="nofollow" target="_blank">Microsoft.Diagnostics.Runtime</a> w skrócie zwane <strong>ClrMD</strong>. Dzięki niemu w prosty sposób można pobrać listę wszystkich zarządzalnych wątków działającej aplikacji wraz z aktualnym stosem wywołań.</p>
+
+    <pre><code class="hljs cs"><span class="hljs-comment">// ClrMD w wersji 0.9.170809.03</span>
+
+<span class="hljs-keyword">int</span> pid = Process.GetProcessesByName(<span class="hljs-string">"cmdWorker"</span>).First().Id;
+<span class="hljs-keyword">using</span> (DataTarget target = DataTarget.AttachToProcess(pid, <span class="hljs-number">1000</span>, AttachFlag.Passive))
+{
+    ClrRuntime runtime = target.ClrVersions
+        .First()
+        .CreateRuntime();
+
+    <span class="hljs-keyword">foreach</span> (ClrThread clrThread <span class="hljs-keyword">in</span> runtime.Threads
+        .Where(w =&gt; <span class="hljs-literal">false</span> == w.IsBackground)
+        )
+    {
+        Console.WriteLine(<span class="hljs-string">$"\nClrMd stack Mgt_ThID = <span class="hljs-subst">{clrThread.ManagedThreadId}</span>, "</span> +
+            <span class="hljs-string">$"Sys_ThID = <span class="hljs-subst">{clrThread.OSThreadId}</span>:"</span>);
+
+        <span class="hljs-keyword">foreach</span> (ClrStackFrame frame <span class="hljs-keyword">in</span> clrThread.StackTrace
+            .Where(w =&gt; <span class="hljs-literal">null</span> != w.Method)
+            )
+        {
+            Console.WriteLine(<span class="hljs-string">"  "</span> + frame.Method.Name);
+        }
+    }
+}</code></pre>   
+
+    <p>Wynik działania:</p>
+
+    <pre><code class="hljs bash">ClrMd stack Mgt_ThID = 1, Sys_ThID = 7208:
+  IL_STUB_PInvoke
+  ReadFileNative
+  Read
+  ReadBuffer
+  ReadLine
+  ReadLine
+  ReadLine
+  Main
+
+ClrMd stack Mgt_ThID = 3, Sys_ThID = 9388:
+  WaitOneNative
+  InternalWaitOne
+  WaitOne
+  WaitOne
+  &lt;StartNonBackgroundThread&gt;b__4_0
+  ThreadStart_Context
+  RunInternal
+  Run
+  Run
+  ThreadStart</code></pre>  
+
+    <p>UWAGA: Najlepiej korzystać z biblioteki w zewnętrznej aplikacji bo w przeciwnym wypadku stos wywołań dla wątku w którym biblioteka została uruchomiona będzie pusty. Jeśli jednak nie ma wyjścia to należy pamiętać o fladze <code>AttachFlag.Passive</code>, która nie spowoduje zawieszenia procesu.</p>
+
+    <a id="CiekawostkaXSharperCore"></a>
+<h3>Ciekawostka - XSharper.Core</h3>
+
+    <p>Będąc już w temacie analizy niedziałającego poprawnie kodu czasami należy dowiedzieć się co dokładnie kryje się w obiektach używanych z bibliotek zewnętrznych (w tym dotnetowych)</p>
+
+    <p>Do takich celów dość dobrze sprawdza się biblioteka <a href="http://xsharper.com/download" rel="nofollow" target="_blank">XSharper.Core.dll</a> dzięki której można zrzucić zawartość całego obiektu do pliku a potem przejrzeć wartości pól w nim zawartych.</p>
+
+    <pre><code class="hljs cs"><span class="hljs-keyword">string</span> dumped = Dump.ToDump(
+    obj, 
+    <span class="hljs-keyword">new</span> DumpSettings {
+        DisplayPrivate = <span class="hljs-literal">true</span>,
+        MaxDepth = <span class="hljs-number">1000</span>
+    });
+File.WriteAllText(pathToFile, dumped);</code></pre>   
+
+    <p>Przykładowy wynik działania:</p>
+
+    <pre><code class="hljs bash">(CityClass) { /* <span class="hljs-comment">#1, 001a0e24 */ </span>
+  _city = (string) <span class="hljs-string">"Łódź"</span>
+  _nfo = (InfoClass) { /* <span class="hljs-comment">#2, 003e799b */ </span>
+    _area = (Single) [293,25]
+    _population = (int)  693797 (0xa9625)
+  }
+}</code></pre>   
+
+</div>
+    </section>
+</body>
+</html>

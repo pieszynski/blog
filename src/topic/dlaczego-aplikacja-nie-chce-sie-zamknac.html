@@ -1,0 +1,207 @@
+<div>
+    <h3>Hello world, które się nie kończy</h3>
+
+    <p>Czasami jest tak, że aplikacja powinna się zamknąć gdy kończymy działanie głównego wątku ale tak się nie dzieje. Choćby ta poniższa:</p>
+
+    %%%#code_cs^
+static void Main(string[] args)
+{
+    CiekawaFunkcja();
+    Console.WriteLine("Hello world. Koniec.");
+}
+    #%%%
+
+    <p>"Problemem" jest <code>CiekawaFunkcja()</code>, której zawartość może wyglądać następująco:</p>
+
+    %%%#code_cs^
+static void CiekawaFunkcja()
+{
+    AutoResetEvent evt = new AutoResetEvent(false);
+    Thread th = new Thread(state =>
+    {
+        evt.WaitOne();
+    });
+    th.IsBackground = false;
+    th.Start();
+}
+    #%%%
+
+    <p>Znajduje się tam parametr <code>IsBackground = false</code>, który powoduje, że proces nie może zostać automatycznie zamknięty. Proces nie zostanie zamknięty dopóki zawiera aktywne wątki nie w tle. Zgodnie z dokumentacją <a href="https://msdn.microsoft.com/en-us/library/system.threading.thread.isbackground(v=vs.110).aspx" rel="nofollow" target="_blank">MSDN</a> wątek startuje domyślnie jako:</p>
+
+    <ul>
+        <li><strong>Nie w tle</strong> - gdy jest to główny wątek aplikacji</li>
+        <li><strong>Nie w tle</strong> - gdy użyto konstruktora <code>Thread()</code></li>
+        <li><strong>W tle</strong> - gdy wątek pochodzi z puli wątków (<code>ThreadPool</code>)</li>
+        <li><strong>W tle</strong> - wątki powołane z <code>async/await</code> bo pochodzą z puli wątków</li>
+        <li><strong>W tle</strong> - wątki nie zarządzalne/natywne, które są używane w kodzie zarządzalnym</li>
+    </ul>
+
+    <p>Dlatego należy zawsze pamiętać aby tworząc nowy wątek ustawiać pole <code>IsBackground = true</code>!</p>
+
+    <p>Namierzenie takiej sytuacji może okazać się nietrywialne bo przeszukanie całego projektu pod względem wystąpienia słowa "IsBackground" lub "Thread" nie zwróci żadnych wyników. Nie znaczy to jednak, że któraś z użytych bibliotek tego nie robi.</p>
+
+    <h3>Jak namierzyć wątki uruchomione jako "nie w tle"</h3>
+
+    <p>Sprawa jest nietrywialna gdyż w .NET nie ma czegoś takiego jak wylistowanie wszystkich wątków zarządzalnych... Jedyne co istnieje to lista wątków natywnych:</p>
+
+    %%%#code_cs^
+Process proc = Process.GetCurrentProcess();
+foreach (ProcessThread thProc in proc.Threads
+    .OfType<ProcessThread>()
+    .OrderBy(o => o.Id)
+    )
+{
+    // Brak pola thProc.ManagedThreadId
+    Console.WriteLine($"Sys_ThID = {thProc.Id}");
+}
+    #%%%
+
+    <p>Wynik w/w kodu zobrazowany jest poniżej. Lista ID wątków (Sys_ThID) pokrywa się z tym co pokazuje ProcessExplorer ale te liczby ni jak mają się do ID wątku zarządzalnego (Mgt_ThID), który został zwrócony w aplikacji za pomocą metody <code>Thread.CurrentThread.ManagedThreadId</code> dla głównego wątku ("Main") oraz drugiego stworzonego w kodzie ("Nowy").</p>
+
+    <image-info info="Lista wątków natywnych w ProcessExplorerze i wylistowana w aplikacji." src="/img/topic/dlaczego-aplikacja-nie-chce-sie-zamknac/sys_mgt_threads.png"></image-info>
+
+    <h3>Brak korelacji 1:1 dla Sys_ThID i Mgt_ThID</h3>
+
+    <p>Sprawa jest o tyle nieciekawa, że nie można dokonać mapowania 1:1 ID wątku natywnego i zarządzalnego. Wynika to ze specyfiki .NET, gdzie jeden wątek natywny może zawierać kilka wątków zarządzalnych. Dokumentacja MSDN <a href="https://docs.microsoft.com/en-us/dotnet/standard/threading/managed-and-unmanaged-threading-in-windows" rel="nofollow" target="_blank">Managed and Unmanaged Threading in Windows</a> mówi w tym temacie tyle (eng):</p>
+
+    <blockquote>An operating-system ThreadId has no fixed relationship to a managed thread, because an unmanaged host can control the relationship between managed and unmanaged threads. Specifically, a sophisticated host can use the Fiber API to schedule many managed threads against the same operating system thread, or to move a managed thread among different operating system threads.</blockquote>
+
+    <p>Jedyne co można zrobić to z wnętrza wątku zarządzalnego pobrać ID wątku natywnego w importując metodę natywną</p>
+
+    %%%#code_cs^
+[DllImport("Kernel32", EntryPoint = "GetCurrentThreadId", ExactSpelling = true)]
+public static extern Int32 GetCurrentWin32ThreadId();
+    #%%%
+
+    <h3>Co jeśli mamy wskaźnik na instancję Thread?</h3>
+
+    <p>Nawet jeśli w jakiś sposób mamy wskaźnik na wątek nie w tle to, żeby pobrać stos wywołać - co jest aktualnie wykonywane - należy użyć metod, które w przyszłości mogą nie być dostępne a aktualnie oznaczone są do usunięcia.</p>
+
+    <p>Poniższy kod listuje stos wywołań dla powołanego wątku, który stoi na metodzie <code>AutoResetEvent.WaitOne()</code>.</p>
+
+    %%%#code_cs^
+// Thread.Suspend has been deprecated.
+// Please use other classes in System.Threading, such as Monitor, Mutex, ...
+_th.Suspend();
+// This constructor has been deprecated.  
+// Please use a constructor that does not require a Thread parameter.
+StackTrace trace = new StackTrace(_th, true);
+Console.WriteLine($"\nStack dla Mgt_ThID = {_th.ManagedThreadId}:");
+foreach (StackFrame sframe in trace.GetFrames())
+{
+    Console.WriteLine("  " + sframe.GetMethod());
+}
+// Thread.Resume has been deprecated.
+_th.Resume();
+    #%%%    
+
+    <p>Wynik działania:</p>
+
+    %%%#code_bash^
+Stack dla Mgt_ThID = 3:
+  Int32 WaitOneNative(System.Runtime.InteropServices.SafeHandle, UInt32, Boolean, Boolean)
+  Boolean InternalWaitOne(System.Runtime.InteropServices.SafeHandle, Int64, Boolean, Boolean)
+  Boolean WaitOne(Int32, Boolean)
+  Boolean WaitOne()
+  Void <StartNonBackgroundThread>b__4_0(System.Object)
+  Void ThreadStart_Context(System.Object)
+  Void RunInternal(System.Threading.ExecutionContext, System.Threading.ContextCallback, System.Object, Boolean)
+  Void Run(System.Threading.ExecutionContext, System.Threading.ContextCallback, System.Object, Boolean)
+  Void Run(System.Threading.ExecutionContext, System.Threading.ContextCallback, System.Object)
+  Void ThreadStart(System.Object)
+    #%%%   
+
+    <h3>A może WinDbg?</h3>
+
+    <p>Jeśli problem można można odtworzyć lokalnie na stacji jeszcze podczas tworzenia kodu nie potrzeba korzystać z niewygodnych w użyciu narzędzi takich jak <strong>WinDbg</strong>.</p>
+
+    <p>Przy WinDbg należy uważać aby aplikacja wykonująca zrzut pamięci działała w tym samym trybie (x86 lub x64) co aplikacja, której zrzut jest wykonywany. Do tego jeszcze trzeba pamiętać aby mieć bibliotekę <code>mscordacwks.dll</code>, która pochodzi z maszyny na której występują problemy. Dodatkowo jeśli takiego debugowania nie robi się często to skonfigurowanie narzędzi i ich użycie to koszmar.</p>
+
+    <h3>ClrMD</h3>
+
+    <p>Z pomocą przychodzi narzędzie <a href="https://github.com/Microsoft/clrmd" rel="nofollow" target="_blank">Microsoft.Diagnostics.Runtime</a> w skrócie zwane <strong>ClrMD</strong>. Dzięki niemu w prosty sposób można pobrać listę wszystkich zarządzalnych wątków działającej aplikacji wraz z aktualnym stosem wywołań.</p>
+
+    %%%#code_cs^
+// ClrMD w wersji 0.9.170809.03
+
+int pid = Process.GetProcessesByName("cmdWorker").First().Id;
+using (DataTarget target = DataTarget.AttachToProcess(pid, 1000, AttachFlag.Passive))
+{
+    ClrRuntime runtime = target.ClrVersions
+        .First()
+        .CreateRuntime();
+
+    foreach (ClrThread clrThread in runtime.Threads
+        .Where(w => false == w.IsBackground)
+        )
+    {
+        Console.WriteLine($"\nClrMd stack Mgt_ThID = {clrThread.ManagedThreadId}, " +
+            $"Sys_ThID = {clrThread.OSThreadId}:");
+
+        foreach (ClrStackFrame frame in clrThread.StackTrace
+            .Where(w => null != w.Method)
+            )
+        {
+            Console.WriteLine("  " + frame.Method.Name);
+        }
+    }
+}
+    #%%%   
+
+    <p>Wynik działania:</p>
+
+    %%%#code_bash^
+ClrMd stack Mgt_ThID = 1, Sys_ThID = 7208:
+  IL_STUB_PInvoke
+  ReadFileNative
+  Read
+  ReadBuffer
+  ReadLine
+  ReadLine
+  ReadLine
+  Main
+
+ClrMd stack Mgt_ThID = 3, Sys_ThID = 9388:
+  WaitOneNative
+  InternalWaitOne
+  WaitOne
+  WaitOne
+  <StartNonBackgroundThread>b__4_0
+  ThreadStart_Context
+  RunInternal
+  Run
+  Run
+  ThreadStart
+    #%%%  
+
+    <p>UWAGA: Najlepiej korzystać z biblioteki w zewnętrznej aplikacji bo w przeciwnym wypadku stos wywołań dla wątku w którym biblioteka została uruchomiona będzie pusty. Jeśli jednak nie ma wyjścia to należy pamiętać o fladze <code>AttachFlag.Passive</code>, która nie spowoduje zawieszenia procesu.</p>
+
+    <h3>Ciekawostka - XSharper.Core</h3>
+
+    <p>Będąc już w temacie analizy niedziałającego poprawnie kodu czasami należy dowiedzieć się co dokładnie kryje się w obiektach używanych z bibliotek zewnętrznych (w tym dotnetowych)</p>
+
+    <p>Do takich celów dość dobrze sprawdza się biblioteka <a href="http://xsharper.com/download" rel="nofollow" target="_blank">XSharper.Core.dll</a> dzięki której można zrzucić zawartość całego obiektu do pliku a potem przejrzeć wartości pól w nim zawartych.</p>
+
+    %%%#code_cs^
+string dumped = Dump.ToDump(
+    obj, 
+    new DumpSettings {
+        DisplayPrivate = true,
+        MaxDepth = 1000
+    });
+File.WriteAllText(pathToFile, dumped);
+    #%%%   
+
+    <p>Przykładowy wynik działania:</p>
+
+    %%%#code_bash^
+(CityClass) { /* #1, 001a0e24 */ 
+  _city = (string) "Łódź"
+  _nfo = (InfoClass) { /* #2, 003e799b */ 
+    _area = (Single) [293,25]
+    _population = (int)  693797 (0xa9625)
+  }
+}
+    #%%%   
+
+</div>
