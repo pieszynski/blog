@@ -141,7 +141,7 @@ var searchGen = require('./searchGen.js');
         var body = pages.pages.map(function(elem) {
             return '<a href="' + getTopicUrl(pages, elem) + '" class="topic-link">'
                 + '<div><h1>' + elem.title + '</h1>'
-                + '<p>' + elem.description + '</p></div>'
+                + '<p>' + elem.description + '</p><div class="hv-anim"></div></div>'
                 + '</a>'
         }).join('\r\n');
 

@@ -36,6 +36,9 @@
 .main-content.main-content-serif p {
     text-align: justify;
 }
+.main-content.main-content-serif a.topic-link h1 {
+    line-height: 1.2em; 
+}
 .main-content.main-content-serif .imageDescription {
     font-size: 0.9em;
 }

@@ -35,24 +35,14 @@
     <script type="text/javascript" src="/js/vendor/underscore.string.min.js"></script>
     <script type="text/javascript" src="/js/vendor/hyphenate.min.js"></script>
     <script type="text/javascript" src="/js/layout.js"></script>
-    <script type="text/javascript" src="/js/menuCtrl.js"></script>
 </head>
 <body ng-app="appRoot" ng-controller="rootCtrl as root">
     <section class="page-header page-header-serif">
-        
+        <div class="project-home"><a href="/">= Strona główna</a></div>
         <h1 class="project-name">AWS:Hello EC2</h1>
         <h2 class="project-tagline">AWS:Hello - pierwsza własna wirtualna maszyna.</h2>
 
-        <!--<a href="https://github.com/pages-themes/cayman" class="btn">View on GitHub</a>-->   
-
-        <div class="menu-btn-hook" ng-controller="menuCtrl as menu">
-            <div class="menu-btn menu-btn-main menu-btn-shadow" ng-click="menu.toggle()">
-                <div>i</div>
-            </div>
-            <div class="menu-btn menu-btn-sub" ng-click="menu.close()">
-                <a href="/"><div>&#8592;</div></a>
-            </div>
-        </div>
+        <!--<a href="https://github.com/pages-themes/cayman" class="btn">View on GitHub</a>-->
     </section>
     <section class="main-content main-content-serif">
         <div>

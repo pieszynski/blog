@@ -35,7 +35,6 @@
     <script type="text/javascript" src="/js/vendor/underscore.string.min.js"></script>
     <script type="text/javascript" src="/js/vendor/hyphenate.min.js"></script>
     <script type="text/javascript" src="/js/layout.js"></script>
-    <script type="text/javascript" src="/js/menuCtrl.js"></script>
 </head>
 <body ng-app="appRoot" ng-controller="rootCtrl as root">
     <section class="page-header page-header-serif">
@@ -43,23 +42,21 @@
         <h1 class="project-name">Przemysław Pieszyński</h1>
         <h2 class="project-tagline">Rzeczy, które szybko się zapomina a potem człowiek wynajduje koło na nowo...</h2>
 
-        <!--<a href="https://github.com/pages-themes/cayman" class="btn">View on GitHub</a>-->   
-
-        
+        <!--<a href="https://github.com/pages-themes/cayman" class="btn">View on GitHub</a>-->
     </section>
     <section class="main-content main-content-serif">
-        <a href="/temat/dlaczego-aplikacja-nie-chce-sie-zamknac" class="topic-link"><div><h1>Dlaczego aplikacja nie chce się zamknąć?</h1><p>Czasami jest tak, że aplikacja powinna się zamknąć a tak się nie dzieje. Dlaczego?</p></div></a>
-<a href="/temat/yt-black-azure-function" class="topic-link"><div><h1>YouTube, czarny ekran, Azure Functions</h1><p>Odtwarzacz muzyki z serwisów wideo za pomocą Azure Functions</p></div></a>
-<a href="/temat/ef-core-migracje" class="topic-link"><div><h1>EntityFramework Core - migracje bez dodatków</h1><p>EntityFramework Core - migracje baz bez dodatków narzędzi linii poleceń dotnet-ef czy PowerShella</p></div></a>
-<a href="/temat/azure-funkcje-android-wear" class="topic-link"><div><h1>Azure: Funkcje i Android Wear</h1><p>Integracja Azure Functions z zegarkiem z Android Wear 2.0</p></div></a>
-<a href="/temat/aws-autoskalowanie" class="topic-link"><div><h1>AWS - autoskalowanie EC2</h1><p>AWS autoskalowanie EC2 i dzielenie ruchu</p></div></a>
-<a href="/temat/aws-cloudfront-cdn" class="topic-link"><div><h1>AWS CloudFront CDN</h1><p>AWS - dostarczanie treści za pomocą CloudFront</p></div></a>
-<a href="/temat/aws-ec2-seria-t" class="topic-link"><div><h1>AWS EC2 Seria T</h1><p>AWS EC2 - Instancje maszyn wirtualnych z serii T</p></div></a>
-<a href="/temat/aws-hello-ec2" class="topic-link"><div><h1>AWS:Hello EC2</h1><p>AWS:Hello - pierwsza własna wirtualna maszyna.</p></div></a>
-<a href="/temat/git-poradnik" class="topic-link"><div><h1>GIT poradnik</h1><p>Szybki start z GIT. Podstawowe komendy i konfiguracja.</p></div></a>
-<a href="/temat/typescript-szybki-start" class="topic-link"><div><h1>TypeScript - szybki start</h1><p>TypeScript - instajacja, pierwsze kroki, itp. Generalnie starter.</p></div></a>
-<a href="/temat/animacje-css" class="topic-link"><div><h1>Animacje za pomocą CSS</h1><p>Animacje za pomocą CSS</p></div></a>
-<a href="/temat/apache-cordova-start" class="topic-link"><div><h1>Apache Cordova - konfiguracja środowiska</h1><p>Apache Cordova - konfiguracja środowiska</p></div></a>
+        <a href="/temat/dlaczego-aplikacja-nie-chce-sie-zamknac" class="topic-link"><div><h1>Dlaczego aplikacja nie chce się zamknąć?</h1><p>Czasami jest tak, że aplikacja powinna się zamknąć a tak się nie dzieje. Dlaczego?</p><div class="hv-anim"></div></div></a>
+<a href="/temat/yt-black-azure-function" class="topic-link"><div><h1>YouTube, czarny ekran, Azure Functions</h1><p>Odtwarzacz muzyki z serwisów wideo za pomocą Azure Functions</p><div class="hv-anim"></div></div></a>
+<a href="/temat/ef-core-migracje" class="topic-link"><div><h1>EntityFramework Core - migracje bez dodatków</h1><p>EntityFramework Core - migracje baz bez dodatków narzędzi linii poleceń dotnet-ef czy PowerShella</p><div class="hv-anim"></div></div></a>
+<a href="/temat/azure-funkcje-android-wear" class="topic-link"><div><h1>Azure: Funkcje i Android Wear</h1><p>Integracja Azure Functions z zegarkiem z Android Wear 2.0</p><div class="hv-anim"></div></div></a>
+<a href="/temat/aws-autoskalowanie" class="topic-link"><div><h1>AWS - autoskalowanie EC2</h1><p>AWS autoskalowanie EC2 i dzielenie ruchu</p><div class="hv-anim"></div></div></a>
+<a href="/temat/aws-cloudfront-cdn" class="topic-link"><div><h1>AWS CloudFront CDN</h1><p>AWS - dostarczanie treści za pomocą CloudFront</p><div class="hv-anim"></div></div></a>
+<a href="/temat/aws-ec2-seria-t" class="topic-link"><div><h1>AWS EC2 Seria T</h1><p>AWS EC2 - Instancje maszyn wirtualnych z serii T</p><div class="hv-anim"></div></div></a>
+<a href="/temat/aws-hello-ec2" class="topic-link"><div><h1>AWS:Hello EC2</h1><p>AWS:Hello - pierwsza własna wirtualna maszyna.</p><div class="hv-anim"></div></div></a>
+<a href="/temat/git-poradnik" class="topic-link"><div><h1>GIT poradnik</h1><p>Szybki start z GIT. Podstawowe komendy i konfiguracja.</p><div class="hv-anim"></div></div></a>
+<a href="/temat/typescript-szybki-start" class="topic-link"><div><h1>TypeScript - szybki start</h1><p>TypeScript - instajacja, pierwsze kroki, itp. Generalnie starter.</p><div class="hv-anim"></div></div></a>
+<a href="/temat/animacje-css" class="topic-link"><div><h1>Animacje za pomocą CSS</h1><p>Animacje za pomocą CSS</p><div class="hv-anim"></div></div></a>
+<a href="/temat/apache-cordova-start" class="topic-link"><div><h1>Apache Cordova - konfiguracja środowiska</h1><p>Apache Cordova - konfiguracja środowiska</p><div class="hv-anim"></div></div></a>
     </section>
 </body>
 </html>
