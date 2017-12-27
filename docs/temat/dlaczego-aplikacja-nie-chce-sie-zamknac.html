@@ -25,6 +25,7 @@
     <meta name="theme-color" content="#157878" />
     <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700" rel="stylesheet" />
     <link href="/css/cayman.css" rel="stylesheet" />
+    <link href="/css/cayman-serif.css" rel="stylesheet" />
     <link href="/css/highlight.min.css" rel="stylesheet" />
     <link href="/css/style.css" rel="stylesheet" />
 
@@ -32,11 +33,12 @@
     <script type="text/javascript" src="/js/vendor/angular.min.js"></script>
     <script type="text/javascript" src="/js/vendor/underscore-min.js"></script>
     <script type="text/javascript" src="/js/vendor/underscore.string.min.js"></script>
+    <script type="text/javascript" src="/js/vendor/hyphenate.min.js"></script>
     <script type="text/javascript" src="/js/layout.js"></script>
     <script type="text/javascript" src="/js/menuCtrl.js"></script>
 </head>
 <body ng-app="appRoot" ng-controller="rootCtrl as root">
-    <section class="page-header">
+    <section class="page-header page-header-serif">
         
         <h1 class="project-name">Dlaczego aplikacja nie chce się zamknąć?</h1>
         <h2 class="project-tagline">Czasami jest tak, że aplikacja powinna się zamknąć a tak się nie dzieje. Dlaczego?</h2>
@@ -52,7 +54,7 @@
             </div>
         </div>
     </section>
-    <section class="main-content">
+    <section class="main-content main-content-serif">
         <div>
     <h3>Spis treści</h3><ol class="toc"><li><a href="#Helloworldktresiniekoczy">Hello world, które się nie kończy</a></li><li><a href="#Jaknamierzywtkiuruchomionejakoniewtle">Jak namierzyć wątki uruchomione jako "nie w tle"</a></li><li><a href="#Brakkorelacji11dlaSysThIDiMgtThID">Brak korelacji 1:1 dla Sys_ThID i Mgt_ThID</a></li><li><a href="#CojelimamywskaniknainstancjThread">Co jeśli mamy wskaźnik na instancję Thread?</a></li><li><a href="#AmoeWinDbg">A może WinDbg?</a></li><li><a href="#ClrMD">ClrMD</a></li><li><a href="#CiekawostkaXSharperCore">Ciekawostka - XSharper.Core</a></li></ol>
 <a id="Helloworldktresiniekoczy"></a>
@@ -225,7 +227,7 @@ ClrMd stack Mgt_ThID = 3, Sys_ThID = 9388:
     <a id="CiekawostkaXSharperCore"></a>
 <h3>Ciekawostka - XSharper.Core</h3>
 
-    <p>Będąc już w temacie analizy niedziałającego poprawnie kodu czasami należy dowiedzieć się co dokładnie kryje się w obiektach używanych z bibliotek zewnętrznych (w tym dotnetowych)</p>
+    <p>Będąc już w temacie analizy niedziałającego poprawnie kodu czasami należy dowiedzieć się co dokładnie kryje się w obiektach używanych z bibliotek zewnętrznych (w tym dotnetowych, np. z GACa, stworzonych przez Microsoft)</p>
 
     <p>Do takich celów dość dobrze sprawdza się biblioteka <a href="http://xsharper.com/download" rel="nofollow" target="_blank">XSharper.Core.dll</a> dzięki której można zrzucić zawartość całego obiektu do pliku a potem przejrzeć wartości pól w nim zawartych.</p>
 
