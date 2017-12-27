@@ -20,6 +20,7 @@ var searchGen = require('./searchGen.js');
     var StandardTemplateReplacements = {
         title: '',
         gohome: true,
+        isHome: function (t,c) { return StandardTemplateReplacements.gohome ? '' : c; },
         name: '',
         tagline: '',
         body: '',
