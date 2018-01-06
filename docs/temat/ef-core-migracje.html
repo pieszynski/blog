@@ -47,7 +47,7 @@
     </section>
     <section class="main-content main-content-serif">
         <div>
-    <h3>Spis treści</h3><ol class="toc"><li><a href="#Wstp">Wstęp</a></li><li><a href="#Przybornik">Przybornik</a></li><li><a href="#JakEFmigrujebazdanych">Jak EF migruje bazę danych?</a></li><li><a href="#Uruchomieniemigracji">Uruchomienie migracji</a></li><li><a href="#Podsumowanie">Podsumowanie</a></li><li><a href="#Zapychaczeczylipozostaeplikiprojektu">Zapychacze, czyli pozostałe pliki projektu</a></li></ol>
+    <h3>Spis treści</h3><ol class="toc"><li><a href="#Wstp">Wstęp</a></li><li><a href="#Przybornik">Przybornik</a></li><li><a href="#JakEFmigrujebazdanych">Jak EF migruje bazę danych?</a></li><li><a href="#Uruchomieniemigracji">Uruchomienie migracji</a></li><li><a href="#Podsumowanie">Podsumowanie</a></li><li><a href="#Zapychaczeczylipozostaeplikiprojektu">Zapychacze, czyli pozostałe pliki projektu</a><ol class="toc-sub1"><li><a href="#PlikStartupcs">Plik Startup.cs</a></li><li><a href="#Modeleikontekst">Modele i kontekst</a></li><li><a href="#Plikappsettingsjson">Plik appsettings.json</a></li></ol></li></ol>
 <a id="Wstp"></a>
 <h3>Wstęp</h3>
 
@@ -297,7 +297,8 @@ info: Microsoft.EntityFrameworkCore.Database.Command[200101]
     <a id="Zapychaczeczylipozostaeplikiprojektu"></a>
 <h3>Zapychacze, czyli pozostałe pliki projektu</h3>
 
-    <h4>Plik Startup.cs</h4>
+    <a id="PlikStartupcs"></a>
+<h4>Plik Startup.cs</h4>
 
     <p>
         Zawartość jest praktycznie szablonowa za wyjątkiem
@@ -308,7 +309,8 @@ info: Microsoft.EntityFrameworkCore.Database.Command[200101]
         <li>Uruchomienie migracji za pomocą <code>DoMigrate.prepareDb(app, logger);</code></li>
     </ul>
 
-    <h4>Modele i kontekst</h4>
+    <a id="Modeleikontekst"></a>
+<h4>Modele i kontekst</h4>
 
     <pre><code class="hljs cs">[Table(<span class="hljs-string">"Blogs"</span>)]
 <span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">Blog</span>
@@ -373,7 +375,8 @@ info: Microsoft.EntityFrameworkCore.Database.Command[200101]
     }
 }</code></pre>
 
-    <h4>Plik appsettings.json</h4>
+    <a id="Plikappsettingsjson"></a>
+<h4>Plik appsettings.json</h4>
 
     <pre><code class="hljs json">{
   <span class="hljs-attr">"ConnectionStrings"</span>: {

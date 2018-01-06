@@ -37,7 +37,7 @@ a.topic-link {
         height: 1px;
         bottom: 1em;
         width: 0;
-        transition: width 0.1s ease-in-out;
+        transition: width 0.3s ease-in-out;
     }
     a:hover.topic-link div.hv-anim {
         width: 100%;
@@ -52,6 +52,29 @@ h1 small, h1 .top-date {
 .preserve {
     white-space: pre-line;
     word-wrap: break-word;
+}
+
+.preserve {
+    white-space: pre-line;
+    word-wrap: break-word;
+}
+
+ol.toc, ol.toc ol {
+    counter-reset: toc-lvl-root;
+}
+ol.toc, ol.toc ol {
+    list-style: none;
+}
+ol.toc ol.toc-sub1 {
+    counter-reset: toc-lvl-1;
+}
+ol.toc > li:before {
+    counter-increment: toc-lvl-root;
+    content: counter(toc-lvl-root) ". ";
+}
+ol.toc-sub1 > li:before {
+    counter-increment: toc-lvl-1;
+    content: counter(toc-lvl-root) "." counter(toc-lvl-1) ". ";
 }
 
 .socio-follows {

@@ -17,6 +17,12 @@
     },
     "pages" : [
         {
+            "name" : "certyfikaty-ssl-lets-encrypt-z-pomoca-azure",
+            "title" : "Certyfikaty SSL Let's Encrypt z pomocą Azure",
+            "description" : "W jaki sposób ułatwić sobie proces tworzenia i aktualizacji certyfikatów trzymiesięcznych z platformy Let's Encrypt.",
+            "date" : "2018-01-06"
+        },
+        {
             "name" : "dlaczego-aplikacja-nie-chce-sie-zamknac",
             "title" : "Dlaczego aplikacja nie chce się zamknąć?",
             "description" : "Czasami jest tak, że aplikacja powinna się zamknąć a tak się nie dzieje. Dlaczego?",

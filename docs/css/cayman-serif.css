@@ -48,3 +48,7 @@
 @media screen and (max-width: 42em) { .main-content.main-content-serif { font-size: 1.2rem; } }
 
 .main-content.main-content-serif h3 { font-size: 1.5em; }
+
+.toc a {
+    color: black;
+}

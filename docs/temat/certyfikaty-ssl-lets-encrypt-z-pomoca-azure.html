@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Przemysław Pieszyński. Programista.">
+    <meta name="author" content="Przemysław Pieszyński">
+    <title>Pieszyński Blog - pieszynski.com</title>
+
+    <link href="/favicon.png" rel="shortcut icon" />
+    <link href="/favicon.png" rel="icon" />
+
+    <link href="/feed.rss" rel="alternate" type="application/rss+xml" title="pieszynski.com - co nowego?" />
+
+    <link rel="me" type="text/html" href="https://twitter.com/pieszynski"/> 
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:site" content="@pieszynski" />
+    <meta name="twitter:title" content="Certyfikaty SSL Let's Encrypt z pomocą Azure" />
+    <meta name="twitter:description" content="W jaki sposób ułatwić sobie proces tworzenia i aktualizacji certyfikatów trzymiesięcznych z platformy Let's Encrypt." />
+    <meta name="twitter:image" content="http://pieszynski.com/favicon.png" />
+
+    <!--<link href="/feed.rss" rel="alternate" type="application/rss+xml" title="pieszynski.com - co nowego?" />-->
+    <meta name="theme-color" content="#157878" />
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700" rel="stylesheet" />
+    <link href="/css/cayman.css" rel="stylesheet" />
+    <link href="/css/cayman-serif.css" rel="stylesheet" />
+    <link href="/css/highlight.min.css" rel="stylesheet" />
+    <link href="/css/style.css" rel="stylesheet" />
+
+    <script type="text/javascript" src="/js/vendor/jquery.min.js"></script>
+    <script type="text/javascript" src="/js/vendor/angular.min.js"></script>
+    <script type="text/javascript" src="/js/vendor/underscore-min.js"></script>
+    <script type="text/javascript" src="/js/vendor/underscore.string.min.js"></script>
+    <script type="text/javascript" src="/js/vendor/hyphenate.min.js"></script>
+    <script type="text/javascript" src="/js/layout.js"></script>
+</head>
+<body ng-app="appRoot" ng-controller="rootCtrl as root">
+    <section class="page-header page-header-serif">
+        <div class="project-home"><a href="/">= Strona główna</a></div>
+        <h1 class="project-name">Certyfikaty SSL Let's Encrypt z pomocą Azure</h1>
+        <h2 class="project-tagline">W jaki sposób ułatwić sobie proces tworzenia i aktualizacji certyfikatów trzymiesięcznych z platformy Let's Encrypt.</h2>
+
+        <!--<a href="https://github.com/pages-themes/cayman" class="btn">View on GitHub</a>-->
+        
+    </section>
+    <section class="main-content main-content-serif">
+        <div>    
+    <h3>Spis treści</h3><ol class="toc"><li><a href="#Wstp">Wstęp</a></li><li><a href="#PrzygotowaniekonteneradanychwAzure">Przygotowanie kontenera danych w Azure</a></li><li><a href="#UruchomieniestronywNETCore">Uruchomienie strony w .NET Core</a></li><li><a href="#AplikacjapobierajcacertyfikatSSL">Aplikacja pobierająca certyfikat SSL</a></li><li><a href="#Zapychaczeczylipozostaeinteresujcepliki">Zapychacze, czyli pozostałe interesujące pliki</a><ol class="toc-sub1"><li><a href="#Nginxdefaultjeszczeniemamycertyfikatu">Nginx - default (jeszcze nie mamy certyfikatu)</a></li><li><a href="#NginxdefaultjelijuposiadamycertyfikatSSL">Nginx - default (jeśli już posiadamy certyfikat SSL)</a></li><li><a href="#UsugasystemdiKestrel">Usługa systemd i Kestrel</a></li><li><a href="#appsettingsjsonstronaWWW">appsettings.json (strona WWW)</a></li><li><a href="#Startupcs">Startup.cs</a></li><li><a href="#UseLetsEncryptAzureUpdatecs">UseLetsEncryptAzureUpdate.cs</a></li></ol></li></ol>
+<a id="Wstp"></a>
+<h3>Wstęp</h3>
+
+    <p>Dobrze jest jeśli strona internetowa, z której korzystamy używa protokołu HTTPS. Problem w tym, że szkoda pieniędzy na certyfikaty SSL najniższego rzędu (DV - Domain Validated). W szczególności gdy jest to zwykle strona do zastosowań prywatnych, na którą czasami trzeba będzie się zalogować i nie chcemy aby hasło było wysyłane w świat otwartym tekstem.</p>
+
+    <p>W tym momencie <strong>Let's Encrypt</strong> jawi się jako rozwiązanie idealne, choć uciążliwe. Idealne bo certyfikat jest za darmo a uciążliwe bo trzeba bo aktualizować co 3 miesiące bo na tyle jest wystawiany.</p>
+
+    <p>Jak jednak ułatwić sobie generowanie certyfikatów bez konieczności logowania się każdorazowo na serwerze i uruchamiania Certbota? Otóż usługa działa w oparciu o protokół <strong>ACME</strong> (Automatic Certificate Management Environment) - w skrócie rzecz ujmując dostajemy plik o konkretnej nazwie i zawartości do wrzucenia na stronę a następnie Let's Encrypt weryfikuje, że jesteśmy właścicielem jeśli sprawdzi, że wskazany plik znajduje się na naszej stronie. W nagrodę otrzymujemy trzymiesięczny certyfikat SSL.</p>
+
+    <p>Nikt jednak nie powiedział, że plik musi znajdować się fizycznie na serwerze. Że kontener weryfikacji ACME nie może znajdować się w... chmurze.</p>
+
+    <p>Takie rozwiązanie ma co najmniej dwie zalety: a) mamy jeden centralny punkt dla wszystkich serwerów i/lub stron niezależnie od nazwy domeny, gdzie będą wrzucane pliki weryfikacji własności domeny, b) w przypadku posiadania kilku serwerów korzystających z tego samego certyfikatu SSL (ta sama domena WWW) za np. LoadBalancerem czy TrafficManagerem nie ma znaczenia, na który serwer trafi żądanie o nowy certyfikat - aplikacja do zarządzania certyfikatami zawsze sobie poradzi.</p>
+
+    <p><strong>UWAGA</strong>: Wszystkie linki w domenie <code>letssl.pieszynski.com</code> są podane jako przykładowe i nie muszą odwzorowywać działającej w chwili obecnej strony WWW.</p>
+
+    <a id="PrzygotowaniekonteneradanychwAzure"></a>
+<h3>Przygotowanie kontenera danych w Azure</h3>
+
+    <p>Zgodnie z planem pliki potwierdzenia posiadania domeny z protokołu <code>ACME</code> nie będą znajdowały się fizycznie na dysku dlatego należy utworzyć dla nich miejsce w kontenerze danych w Azure. W tym konkretnym przykładzie konfiguracja wygląda następująco:</p>
+
+    <ul>
+        <li>Konto danych: <strong>https://letsslstore.blob.core.windows.net/</strong></li>
+        <li>Kontener: <strong>cert-container</strong> (wartość zmiennej <code>ACME_CONTAINER</code>)</li>
+        <li>
+            <div>Polityki dostępu do kontenera</div>
+            <ul>
+                <li><strong>wo-policy</strong> - dostęp do zapisu i kasowania</li>
+                <li><strong>ro-policy</strong> - dostęp tylko do odczytu</li>
+            </ul>
+        </li>
+    </ul>
+    
+    <image-info info="Konfiguracja kontenera danych" src="/img/topic/certyfikaty-ssl-lets-encrypt-z-pomoca-azure/kontener.png"></image-info>
+
+    <p>Teraz za pomocą aplikacji <strong>Microsoft Azure Storage Explorer</strong> (lub portalu choć jest to znacznie mniej wygodne) wrzucamy plik testowy w konkretne miejsce - <code>acme-challenge/test</code> (nazwa katalogu jest ważna, a pliku nie). Następnie generujemy ciągi dostępowe do kontenera</p>
+
+    <p>Opcja <strong>Generate container-level shared access signature URI</strong> nie ma tutaj znaczenia.</p>
+
+    <ul>
+        <li>Z polityką <strong>wo-policy</strong> dla aplikacji zarządzającej certyfikatami SSL</li>
+        <li>Z polityką <strong>ro-policy</strong> dla strony WWW</li>
+    </ul>
+
+    <image-info info="Tworzenie kluczy SAS" src="/img/topic/certyfikaty-ssl-lets-encrypt-z-pomoca-azure/konfiguracja-sas.png"></image-info>
+
+    <p>Aby wygenerowany ciąg w polu <strong>URL</strong> stał się ciągiem dostępowym, który będzie można umieścić w konfiguracji strony w zmiennej <code>ACME_CONNECTION_STRING</code> należy niestety "trochę" go zmodyfikować. Wynika to z tego, że takiego formatu wymaga <code>Microsoft.WindowsAzure.Storage</code>.</p>
+
+    <ul>
+        <li>Całość poprzedzić prefiksem <code>BlobEndpoint=</code></li>
+        <li>Kasujemy część adresu odpowiadającą za ścieżkę do katalogu (należy zostawić sam adres hosta) wraz ze znakiem zapytania. W zamian za skasowaną część wstawić ciąg <code>;SharedAccessSignature=</code></li>
+    </ul>
+
+    <p>Jeśli powyższy opis wydaje się niejasny dla porównania umieszczam prawdziwy wygenerowany <strong>URL</strong> dla polityki <code>ro-policy</code> oraz ciąg połączeniowy potrzebny w zmiennej <code>ACME_CONNECTION_STRING</code></p>
+
+    <pre><code class="hljs bash"><span class="hljs-comment"># URL z Microsoft Azure Storage Explorera</span>
+https://letsslstore.blob.core.windows.net/cert-container?sv=2017-04-17&amp;si=ro-policy&amp;sr=c&amp;sig=S3WfdM0JHPPDOJI4GP7mAOeWJzKUJa2QJzMgnaFQFzw%3D
+<span class="hljs-comment"># ACME_CONNECTION_STRING</span>
+BlobEndpoint=https://letsslstore.blob.core.windows.net;SharedAccessSignature=sv=2017-04-17&amp;si=ro-policy&amp;sr=c&amp;sig=S3WfdM0JHPPDOJI4GP7mAOeWJzKUJa2QJzMgnaFQFzw%3D</code></pre>
+
+    <p>Gdyby okazało się, że wygenerowane ciągi dostępowe wyciekły i ktoś niepowołany uzyskał do nich dostęp należy przegenerować domyślne klucze dostępowe <strong>key1</strong> i <strong>key2</strong> na zakładce <strong>Access keys</strong> w portalu Azure. Na szczęście jeśli ktoś wykradł klucz dostępowy SAS z naszego serwera to i tak nie jest w stanie cokolwiek zepsuć, bo jest to klucz tylko do odczytu zgodnie z polityką <code>ro-policy</code>. Nawet gdyby rozpoczął procedurę tworzenia nowego certyfikatu w usłudze Let's Encrypt to nie wrzuci do kontenera Azure żadnego pliku potwierdzającego tożsamość a tym samym nie będzie w stanie wygenerować nowego certyfikatu w naszym imieniu.</p>
+
+    <p>Dodatkowym ułatwieniem w przypadku potrzeby zmiany wartości zmiennej <code>ACME_CONNECTION_STRING</code> jest fakt, że nie trzeba restartować aplikacji aby zmiana weszła w życie. Wystarczy zmienić wartość w pliku <code>appsettings.json</code> i gotowe. Strona WWW korzysta z nowego klucza SAS.</p>
+
+    <a id="UruchomieniestronywNETCore"></a>
+<h3>Uruchomienie strony w .NET Core</h3>
+
+    <p>W związku z tym, że na platformie Azure pojawiły się znacznie tańsze maszyny do hostowania stron WWW (spadek z ok. €37 do €3 za miesiąc) dlatego tam zostanie umieszczona strona testowa. Cały opis dotyczy maszyny korzystającej z systemu Ubuntu ale nie ma znaczenia czy jest ona w chmurze czy pod biurkiem.</p>
+
+    <p>Ważnym aspektem jest instalacja <strong>dotnet.exe</strong> na maszynie docelowej. Bardzo dobrze jest to opisanie na stronie producenta: <a nhref="https://www.microsoft.com/net/learn/get-started/linuxubuntu">Get started with .NET in 10 minutes</a>. W przypadku Azure należy jeszcze pamiętać o umożliwieniu komunikacji ze światem na portach HTTP i HTTPS (zakładka "Networking").</p>
+
+    <p>Teraz czas na instalację <strong>Nginx</strong>. Pełen opis instalacji i zabezpieczania stron opisany jest również na stronie Microsoftu - <a nhref="https://docs.microsoft.com/en-us/aspnet/core/publishing/linuxproduction?tabs=aspnetcore2x">Set up a hosting environment for ASP.NET Core on Linux with Nginx, and deploy to it</a>. Żeby nie duplikować wszystkiego na mojej stronie umieszczam tylko same konfiguracje Nginxa - przed i po instalacji pierwszego certyfikatu.</p>
+
+    <p>W skrócie: gdy nie posiadamy jeszcze pierwszego certyfikatu, należy wystawić swoją stronę tylko na porcie HTTP aby usługa "Let's Encrypt" mogła za pomocą protokołu ACME wygenerować pierwszy certyfikat SSL. Po zainstalowaniu certyfikatu i przejściu na HTTPS, i wyłączeniu protokołu HTTP (wszystkie żądania będą przerzucane do HTTPS) "Let's Encrypt" nie ma problemów z korzystaniem z HTTPSa więc nie trzeba pozostawiać działającego portu HTTP.</p>
+
+    <p>Teraz wystarczy przerzucić pliki strony internetowej na serwer do katalogu docelowego oraz skompilować - <code>dotnet build</code> (usługa uruchamiająca nie wykonuje kompilacji). Jest to związane z faktem, że użytkownik <code>www-data</code> domyślnie nie ma dostępu do zapisu do katalogu w którym znajduje się strona (tu <code>/home/przemek/letssl</code>)</p>
+
+    <p>Teraz można spokojnie uruchomić usługę i na potwierdzenie, że wszystko działa wchodzimy na stronę i/lub sprawdzamy jej status w systemie.</p>
+
+    <pre><code class="hljs bash">root@wssl:~<span class="hljs-comment"># systemctl status kestrel-letssl.service</span>
+● kestrel-letssl.service - letssl WWW
+   Loaded: loaded (/etc/systemd/system/kestrel-letssl.service; enabled; vendor preset: enabled)
+   Active: active (running) since Mon yyyy-MM-dd HH:mm:ss UTC; 30s ago
+ Main PID: 37539 (dotnet)
+    Tasks: 30 (<span class="hljs-built_in">limit</span>: 19660)
+   Memory: 57.0M
+      CPU: 1.516s
+   CGroup: /system.slice/kestrel-letssl.service
+           ├─37539 /usr/bin/dotnet run --no-build
+           └─37570 dotnet <span class="hljs-built_in">exec</span> /home/przemek/letssl/bin/Debug/netcoreapp2.0/LenuAzureAspMiddleware.Example.dll</code></pre>
+
+    <p>W tym przypadku (strona przykładowa - źródło w Github <a nhref="https://github.com/pieszynski/letsencrypt-net-update/src/LenuAzureAspMiddleware/LenuAzureAspMiddleware.Example">LenuAzureAspMiddleware.Example</a>) strona składała się tylko z kontrolera ścieżki głównej (<code>http://letssl.pieszynski.com/</code>) zwracającego aktualną godzinę oraz obsługującego tworzenie certyfikatów więc jedyną szansą na sprawdzenie działania protokołu ACME będzie wejście na spreparowany link (do wrzuconego wcześniej do kontenera Azure pliku <code>acme-challenge/test</code>) udający protokół ACME: <code>http://letssl.pieszynski.com/.well-known/acme-challenge/test</code></p>
+
+    <a id="AplikacjapobierajcacertyfikatSSL"></a>
+<h3>Aplikacja pobierająca certyfikat SSL</h3>
+
+    <p>Teraz wystarczy już tylko skorzystać a mojej aplikacji do generowania certyfikatów - <a nhref="https://github.com/pieszynski/letsencrypt-net-update">Pieszynski.LenuManager.exe</a> aby wygenerować wymagane certyfikaty.</p>
+
+    <p>Aplikacja po skonfigurowaniu wygeneruje następujące pliki:</p>
+
+    <ul>
+        <li><strong>letssl.pieszynski.com.pfx</strong> - kontener zawierający certyfikat i klucz prywatny</li>
+        <li><strong>letssl.pieszynski.com.der.crt</strong> - certyfikat publiczny dla Nginxa</li>
+        <li><strong>letssl.pieszynski.com.key</strong> - klucz prywatny dla Nginxa</li>
+    </ul>
+
+    <p>Pliki przenosimy w odpowiednie miejsce na serwerze, zmieniamy konfigurację Nginxa aby teraz działał tylko po HTTPS, restartujemy Nginxa i strona WWW działa już przy użyciu HTTPSa. Czynność tę będzie powtórzyć za jakieś 2,5 miesiąca bo certyfikaty SSL do "Let's Encrypt" są wystawiane <strong>tylko 3 miesiące</strong>.</p>
+
+    <image-info info="Generowanie certyfikatu SSL" src="/img/topic/certyfikaty-ssl-lets-encrypt-z-pomoca-azure/cert-gen.png"></image-info>
+
+    <a id="Zapychaczeczylipozostaeinteresujcepliki"></a>
+<h3>Zapychacze, czyli pozostałe interesujące pliki</h3>
+
+    <p>Konfiguracja przewidziana jest dla domeny <code>letssl.pieszynski.com</code>, która przez rekord <code>CNAME</code> w DNS wskazuje na serwer w Azure <code>costam-costam.cloudapp.azure.com.</code></p>
+
+    <p>Sprawdzenie konfiguracji i restart Nginx</p>
+
+    <pre><code class="hljs bash"><span class="hljs-comment"># sprawdzenie konfiguracji</span>
+sudo nginx -t
+
+<span class="hljs-comment"># wczytanie nowej konfiguracji</span>
+sudo nginx <span class="hljs-_">-s</span> reload</code></pre>
+
+    <a id="Nginxdefaultjeszczeniemamycertyfikatu"></a>
+<h4>Nginx - default (jeszcze nie mamy certyfikatu)</h4>
+
+    <pre><code class="hljs bash"><span class="hljs-comment"># plik: /etc/nginx/sites-available/default</span>
+<span class="hljs-comment">#</span>
+<span class="hljs-comment"># Default server configuration</span>
+<span class="hljs-comment">#</span>
+
+server {
+    listen 80;
+    location / {
+        proxy_pass http://localhost:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade <span class="hljs-variable">$http_upgrade</span>;
+        proxy_set_header Connection keep-alive;
+        proxy_set_header Host <span class="hljs-variable">$host</span>;
+        proxy_cache_bypass <span class="hljs-variable">$http_upgrade</span>;
+    }
+}</code></pre>
+
+    <a id="NginxdefaultjelijuposiadamycertyfikatSSL"></a>
+<h4>Nginx - default (jeśli już posiadamy certyfikat SSL)</h4>
+
+    <pre><code class="hljs bash"><span class="hljs-comment">#</span>
+<span class="hljs-comment"># plik: /etc/nginx/sites-available/default</span>
+<span class="hljs-comment">#</span>
+<span class="hljs-comment"># Default server configuration</span>
+<span class="hljs-comment">#</span>
+
+upstream letssl {
+    server localhost:5000;
+}
+
+server {
+    listen *:80;
+    add_header Strict-Transport-Security max-age=15768000;
+    <span class="hljs-built_in">return</span> 301 https://<span class="hljs-variable">$host</span><span class="hljs-variable">$request_uri</span>;
+}
+
+server {
+    listen *:443    ssl;
+    server_name     letssl.pieszynski.com;
+    ssl_certificate /etc/nginx/ssl/letssl.pieszynski.com.der.crt;
+    ssl_certificate_key /etc/nginx/ssl/letssl.pieszynski.com.key;
+    ssl_protocols TLSv1.1 TLSv1.2;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers <span class="hljs-string">"EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH"</span>;
+    ssl_ecdh_curve secp384r1;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_tickets off;
+    ssl_stapling on; <span class="hljs-comment">#ensure your cert is capable</span>
+    ssl_stapling_verify on; <span class="hljs-comment">#ensure your cert is capable</span>
+
+    add_header Strict-Transport-Security <span class="hljs-string">"max-age=63072000; includeSubdomains; preload"</span>;
+    add_header X-Frame-Options DENY;
+    add_header X-Content-Type-Options nosniff;
+
+    location / {
+        proxy_pass http://letssl;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade <span class="hljs-variable">$http_upgrade</span>;
+        proxy_set_header Connection keep-alive;
+        proxy_set_header Host <span class="hljs-variable">$host</span>;
+        proxy_cache_bypass <span class="hljs-variable">$http_upgrade</span>;
+    }
+}</code></pre>
+
+    <a id="UsugasystemdiKestrel"></a>
+<h4>Usługa systemd i Kestrel</h4>
+
+    <pre><code class="hljs bash"><span class="hljs-comment">#</span>
+<span class="hljs-comment"># Plik /etc/systemd/system/kestrel-letssl.service</span>
+<span class="hljs-comment">#</span>
+[Unit]
+Description=letssl WWW
+
+[Service]
+WorkingDirectory=/home/przemek/letssl
+ExecStart=/usr/bin/dotnet run --no-build
+Restart=always
+RestartSec=10  <span class="hljs-comment"># Restart service after 10 seconds if dotnet service crashes</span>
+SyslogIdentifier=dotnet-letssl
+User=www-data
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=<span class="hljs-literal">false</span>
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+
+    <a id="appsettingsjsonstronaWWW"></a>
+<h4>appsettings.json (strona WWW)</h4>
+
+    <pre><code class="hljs json">{
+  "ACME_CONNECTION_STRING": "BlobEndpoint=https://...blob.core.windows.net;Sha...",
+  "ACME_CONTAINER": "cert-container",
+  ...
+}</code></pre>
+
+    <a id="Startupcs"></a>
+<h4>Startup.cs</h4>
+
+    <pre><code class="hljs cs"><span class="hljs-keyword">using</span> System;
+<span class="hljs-keyword">using</span> System.Collections.Generic;
+<span class="hljs-keyword">using</span> System.Linq;
+<span class="hljs-keyword">using</span> System.Threading.Tasks;
+<span class="hljs-keyword">using</span> Microsoft.AspNetCore.Builder;
+<span class="hljs-keyword">using</span> Microsoft.AspNetCore.Hosting;
+<span class="hljs-keyword">using</span> Microsoft.Extensions.Configuration;
+<span class="hljs-keyword">using</span> Microsoft.Extensions.DependencyInjection;
+<span class="hljs-keyword">using</span> Microsoft.Extensions.Logging;
+<span class="hljs-keyword">using</span> Microsoft.Extensions.Options;
+<span class="hljs-keyword">using</span> Pieszynski.LenuAzureAspMiddleware;
+
+<span class="hljs-keyword">namespace</span> <span class="hljs-title">LenuAzureAspMiddleware.Example</span>
+{
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">Startup</span>
+    {
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">Startup</span>(<span class="hljs-params">IConfiguration configuration</span>)
+        </span>{
+            Configuration = configuration;
+        }
+
+        <span class="hljs-keyword">public</span> IConfiguration Configuration { <span class="hljs-keyword">get</span>; }
+
+        <span class="hljs-comment">// This method gets called by the runtime. </span>
+        <span class="hljs-comment">//  Use this method to add services to the container.</span>
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">ConfigureServices</span>(<span class="hljs-params">IServiceCollection services</span>)
+        </span>{
+            <span class="hljs-comment">// DODAĆ:</span>
+            services.AddLetsEncryptAzureUpdate(Configuration);
+
+            services.AddMvc();
+        }
+
+        <span class="hljs-comment">// This method gets called by the runtime. </span>
+        <span class="hljs-comment">//  Use this method to configure the HTTP request pipeline.</span>
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Configure</span>(<span class="hljs-params">IApplicationBuilder app, IHostingEnvironment env</span>)
+        </span>{
+            <span class="hljs-keyword">if</span> (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
+
+            <span class="hljs-comment">// DODAĆ:</span>
+            app.UseLetsEncryptAzureUpdate();
+
+            app.UseMvc();
+        }
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">Program</span>
+    {
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Main</span>(<span class="hljs-params"><span class="hljs-keyword">string</span>[] args</span>)
+        </span>{
+            BuildWebHost(args).Run();
+        }
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> IWebHost <span class="hljs-title">BuildWebHost</span>(<span class="hljs-params"><span class="hljs-keyword">string</span>[] args</span>) </span>=&gt;
+            WebHost.CreateDefaultBuilder(args)
+                .UseStartup&lt;Startup&gt;()
+                .Build();
+    }
+}</code></pre>
+
+    <a id="UseLetsEncryptAzureUpdatecs"></a>
+<h4>UseLetsEncryptAzureUpdate.cs</h4>
+
+    <p>Aby skorzystać z poniższego kodu potrzebne są poniższe NuGety.</p>
+
+    <ul>
+        <li><code>WindowsAzure.Storage</code></li>
+        <li><code>Microsoft.AspNetCore.Mvc.Core</code></li>
+        <li><code>Microsoft.AspNetCore.HttpOverrides</code></li>
+        <li><code>Microsoft.Extensions.Options.ConfigurationExtensions</code></li>
+    </ul>
+
+    <pre><code class="hljs cs"><span class="hljs-keyword">using</span> Microsoft.AspNetCore.Builder;
+<span class="hljs-keyword">using</span> Microsoft.AspNetCore.HttpOverrides;
+<span class="hljs-keyword">using</span> Microsoft.AspNetCore.Mvc;
+<span class="hljs-keyword">using</span> Microsoft.Extensions.Configuration;
+<span class="hljs-keyword">using</span> Microsoft.Extensions.DependencyInjection;
+<span class="hljs-keyword">using</span> Microsoft.Extensions.Logging;
+<span class="hljs-keyword">using</span> Microsoft.Extensions.Options;
+<span class="hljs-keyword">using</span> Microsoft.WindowsAzure.Storage;
+<span class="hljs-keyword">using</span> Microsoft.WindowsAzure.Storage.Blob;
+<span class="hljs-keyword">using</span> System;
+<span class="hljs-keyword">using</span> System.Collections.Generic;
+<span class="hljs-keyword">using</span> System.Text;
+<span class="hljs-keyword">using</span> System.Threading.Tasks;
+
+<span class="hljs-keyword">namespace</span> <span class="hljs-title">Pieszynski.LenuAzureAspMiddleware</span>
+{
+    <span class="hljs-comment"><span class="hljs-doctag">///</span> <span class="hljs-doctag">&lt;summary&gt;</span></span>
+    <span class="hljs-comment"><span class="hljs-doctag">///</span> Opcje konfiguracji: Connection string do kontenera danych Azure</span>
+    <span class="hljs-comment"><span class="hljs-doctag">///</span> <span class="hljs-doctag">&lt;/summary&gt;</span></span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">LenuOptions</span>
+    {
+        <span class="hljs-keyword">public</span> <span class="hljs-keyword">string</span> ACME_CONNECTION_STRING { <span class="hljs-keyword">get</span>; <span class="hljs-keyword">set</span>; }
+        <span class="hljs-keyword">public</span> <span class="hljs-keyword">string</span> ACME_CONTAINER { <span class="hljs-keyword">get</span>; <span class="hljs-keyword">set</span>; }
+    }
+
+    <span class="hljs-comment"><span class="hljs-doctag">///</span> <span class="hljs-doctag">&lt;summary&gt;</span></span>
+    <span class="hljs-comment"><span class="hljs-doctag">///</span> Funkcje pomocnicze do rejestracji w Startup.cs</span>
+    <span class="hljs-comment"><span class="hljs-doctag">///</span> <span class="hljs-doctag">&lt;/summary&gt;</span></span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">class</span> <span class="hljs-title">LenuRegisterAzureMiddlewareExtensions</span>
+    {
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">AddLetsEncryptAzureUpdate</span>(<span class="hljs-params"><span class="hljs-keyword">this</span> IServiceCollection services,
+            IConfiguration config
+            </span>)
+        </span>{
+            services.AddRouting();
+            services.AddOptions();
+            services.Configure&lt;LenuOptions&gt;(config);
+        }
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">UseLetsEncryptAzureUpdate</span>(<span class="hljs-params"><span class="hljs-keyword">this</span> IApplicationBuilder app</span>)
+        </span>{
+            app.UseForwardedHeaders(<span class="hljs-keyword">new</span> ForwardedHeadersOptions
+            {
+                ForwardedHeaders =
+                    ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+            });
+        }
+    }
+
+    <span class="hljs-comment"><span class="hljs-doctag">///</span> <span class="hljs-doctag">&lt;summary&gt;</span></span>
+    <span class="hljs-comment"><span class="hljs-doctag">///</span> Kontroler serwujący dane z kontenera Azure</span>
+    <span class="hljs-comment"><span class="hljs-doctag">///</span> <span class="hljs-doctag">&lt;/summary&gt;</span></span>
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">LenuAzureAcmeController</span> : <span class="hljs-title">ControllerBase</span>
+    {
+        <span class="hljs-keyword">protected</span> <span class="hljs-keyword">const</span> <span class="hljs-keyword">string</span> AcmeChallengeDir = <span class="hljs-string">"acme-challenge"</span>;
+
+        <span class="hljs-keyword">protected</span> <span class="hljs-keyword">readonly</span> LenuOptions options;
+        <span class="hljs-keyword">protected</span> <span class="hljs-keyword">readonly</span> ILogger&lt;LenuAzureAcmeController&gt; logger;
+        <span class="hljs-keyword">protected</span> <span class="hljs-keyword">readonly</span> CloudBlobContainer container;
+
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-title">LenuAzureAcmeController</span>(<span class="hljs-params">IOptionsSnapshot&lt;LenuOptions&gt; optionsAccessor, 
+            ILogger&lt;LenuAzureAcmeController&gt; logger
+            </span>)
+        </span>{
+            <span class="hljs-keyword">this</span>.options = optionsAccessor.Value;
+            <span class="hljs-keyword">this</span>.logger = logger;
+
+            <span class="hljs-keyword">try</span>
+            {
+                <span class="hljs-keyword">string</span> connectionString = <span class="hljs-keyword">this</span>.options.ACME_CONNECTION_STRING;
+                <span class="hljs-keyword">string</span> acmeContainerName = <span class="hljs-keyword">this</span>.options.ACME_CONTAINER;
+                <span class="hljs-keyword">this</span>.container = CloudStorageAccount.Parse(connectionString)
+                    .CreateCloudBlobClient()
+                    .GetContainerReference(acmeContainerName);
+            }
+            <span class="hljs-keyword">catch</span> (Exception ex)
+            {
+                <span class="hljs-keyword">this</span>.logger.LogError(
+                    ex, 
+                    <span class="hljs-string">"Missing 'ACME_CONNECTION_STRING' parameter/app setting"</span>
+                    );
+                <span class="hljs-keyword">throw</span>;
+            }
+        }
+
+        [Route(<span class="hljs-string">".well-known/acme-challenge/{*fileName}"</span>)]
+        <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">virtual</span> <span class="hljs-keyword">async</span> Task&lt;IActionResult&gt; <span class="hljs-title">GetFilesAsync</span>(<span class="hljs-params"><span class="hljs-keyword">string</span> fileName</span>)
+        </span>{
+            <span class="hljs-keyword">var</span> data = <span class="hljs-keyword">await</span> <span class="hljs-keyword">this</span>.GetChallengeFileContentAsync(fileName);
+            <span class="hljs-keyword">if</span> (<span class="hljs-keyword">string</span>.IsNullOrEmpty(data))
+                <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.NotFound(<span class="hljs-string">"Unable to serve file: "</span> + fileName);
+
+            <span class="hljs-keyword">return</span> Content(data, <span class="hljs-string">"text/plain"</span>);
+        }
+
+        <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">async</span> Task&lt;<span class="hljs-keyword">string</span>&gt; <span class="hljs-title">GetChallengeFileContentAsync</span>(<span class="hljs-params"><span class="hljs-keyword">string</span> fileName</span>)
+        </span>{
+            <span class="hljs-keyword">string</span> blobName = fileName
+                ?.Replace(<span class="hljs-string">"."</span>, <span class="hljs-string">""</span>)
+                .Replace(<span class="hljs-string">"/"</span>, <span class="hljs-string">""</span>)
+                .Replace(<span class="hljs-string">"\\"</span>, <span class="hljs-string">""</span>);
+
+            <span class="hljs-keyword">if</span> (<span class="hljs-keyword">string</span>.IsNullOrEmpty(blobName))
+                <span class="hljs-keyword">return</span> <span class="hljs-string">""</span>;
+
+            <span class="hljs-keyword">try</span>
+            {
+                <span class="hljs-keyword">string</span> response = <span class="hljs-keyword">await</span> <span class="hljs-keyword">this</span>.container
+                    .GetBlockBlobReference(<span class="hljs-string">$"<span class="hljs-subst">{AcmeChallengeDir}</span>/<span class="hljs-subst">{blobName}</span>"</span>)
+                    .DownloadTextAsync();
+
+                <span class="hljs-keyword">return</span> response;
+            }
+            <span class="hljs-keyword">catch</span> (Exception ex)
+            {
+                <span class="hljs-keyword">this</span>.logger.LogError(ex, <span class="hljs-string">$"Requested file: <span class="hljs-subst">{fileName}</span>. "</span> +
+                    <span class="hljs-string">$"Requested blob: <span class="hljs-subst">{AcmeChallengeDir}</span>/<span class="hljs-subst">{blobName}</span>"</span>);
+                <span class="hljs-keyword">return</span> <span class="hljs-string">""</span>;
+            }
+        }
+    }
+}</code></pre>
+
+</div>
+    </section>
+</body>
+</html>
