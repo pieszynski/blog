@@ -138,7 +138,7 @@ BlobEndpoint=https://letsslstore.blob.core.windows.net;SharedAccessSignature=sv=
            ├─37539 /usr/bin/dotnet run --no-build
            └─37570 dotnet <span class="hljs-built_in">exec</span> /home/przemek/letssl/bin/Debug/netcoreapp2.0/LenuAzureAspMiddleware.Example.dll</code></pre>
 
-    <p>W tym przypadku (strona przykładowa - źródło w Github <a nhref="https://github.com/pieszynski/letsencrypt-net-update/src/LenuAzureAspMiddleware/LenuAzureAspMiddleware.Example">LenuAzureAspMiddleware.Example</a>) strona składała się tylko z kontrolera ścieżki głównej (<code>http://letssl.pieszynski.com/</code>) zwracającego aktualną godzinę oraz obsługującego tworzenie certyfikatów więc jedyną szansą na sprawdzenie działania protokołu ACME będzie wejście na spreparowany link (do wrzuconego wcześniej do kontenera Azure pliku <code>acme-challenge/test</code>) udający protokół ACME: <code>http://letssl.pieszynski.com/.well-known/acme-challenge/test</code></p>
+    <p>W tym przypadku (strona przykładowa - źródło w Github <a nhref="https://github.com/pieszynski/letsencrypt-net-update/tree/master/src/LenuAzureAspMiddleware/LenuAzureAspMiddleware.Example">LenuAzureAspMiddleware.Example</a>) strona składała się tylko z kontrolera ścieżki głównej (<code>http://letssl.pieszynski.com/</code>) zwracającego aktualną godzinę oraz obsługującego tworzenie certyfikatów więc jedyną szansą na sprawdzenie działania protokołu ACME będzie wejście na spreparowany link (do wrzuconego wcześniej do kontenera Azure pliku <code>acme-challenge/test</code>) udający protokół ACME: <code>http://letssl.pieszynski.com/.well-known/acme-challenge/test</code></p>
 
     <a id="AplikacjapobierajcacertyfikatSSL"></a>
 <h3>Aplikacja pobierająca certyfikat SSL</h3>
@@ -153,7 +153,9 @@ BlobEndpoint=https://letsslstore.blob.core.windows.net;SharedAccessSignature=sv=
         <li><strong>letssl.pieszynski.com.key</strong> - klucz prywatny dla Nginxa</li>
     </ul>
 
-    <p>Pliki przenosimy w odpowiednie miejsce na serwerze, zmieniamy konfigurację Nginxa aby teraz działał tylko po HTTPS, restartujemy Nginxa i strona WWW działa już przy użyciu HTTPSa. Czynność tę będzie powtórzyć za jakieś 2,5 miesiąca bo certyfikaty SSL do "Let's Encrypt" są wystawiane <strong>tylko 3 miesiące</strong>.</p>
+    <p>Pliki przenosimy w odpowiednie miejsce na serwerze, zmieniamy konfigurację Nginxa aby teraz działał tylko po HTTPS, restartujemy Nginxa i strona WWW działa już przy użyciu HTTPSa. Czynność tę będzie trzeba powtórzyć za jakieś 2,5 miesiąca, bo certyfikaty SSL do "Let's Encrypt" są wystawiane <strong>tylko 3 miesiące</strong>.</p>
+
+    <p>Kody źródłowe oraz skompilowana aplikacja znajdują się na GitHub pod adresem <a nhref="https://github.com/pieszynski/letsencrypt-net-update">pieszynski/letsencrypt-net-update</a>.</p>
 
     <image-info info="Generowanie certyfikatu SSL" src="/img/topic/certyfikaty-ssl-lets-encrypt-z-pomoca-azure/cert-gen.png"></image-info>
 
