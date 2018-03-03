@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Przemysław Pieszyński. Programista.">
+    <meta name="author" content="Przemysław Pieszyński">
+    <title>Pieszyński Blog - pieszynski.com</title>
+
+    <link href="/favicon.png" rel="shortcut icon" />
+    <link href="/favicon.png" rel="icon" />
+
+    <link href="/feed.rss" rel="alternate" type="application/rss+xml" title="pieszynski.com - co nowego?" />
+
+    <link rel="me" type="text/html" href="https://twitter.com/pieszynski"/> 
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:site" content="@pieszynski" />
+    <meta name="twitter:title" content="TensorFlow, MNIST; wizualizacja" />
+    <meta name="twitter:description" content="Wizualizacja kolejnych etapów uczenia maszynowego do rozpoznawania cyfr pisanych na podstawie bazy MNIST." />
+    <meta name="twitter:image" content="http://pieszynski.com/favicon.png" />
+
+    <!--<link href="/feed.rss" rel="alternate" type="application/rss+xml" title="pieszynski.com - co nowego?" />-->
+    <meta name="theme-color" content="#157878" />
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700" rel="stylesheet" />
+    <link href="/css/cayman.css" rel="stylesheet" />
+    <link href="/css/cayman-serif.css" rel="stylesheet" />
+    <link href="/css/highlight.min.css" rel="stylesheet" />
+    <link href="/css/style.css" rel="stylesheet" />
+
+    <script type="text/javascript" src="/js/vendor/jquery.min.js"></script>
+    <script type="text/javascript" src="/js/vendor/angular.min.js"></script>
+    <script type="text/javascript" src="/js/vendor/underscore-min.js"></script>
+    <script type="text/javascript" src="/js/vendor/underscore.string.min.js"></script>
+    <script type="text/javascript" src="/js/vendor/hyphenate.min.js"></script>
+    <script type="text/javascript" src="/js/layout.js"></script>
+</head>
+<body ng-app="appRoot" ng-controller="rootCtrl as root">
+    <section class="page-header page-header-serif">
+        <div class="project-home"><a href="/">= Strona główna</a></div>
+        <h1 class="project-name">TensorFlow, MNIST; wizualizacja</h1>
+        <h2 class="project-tagline">Wizualizacja kolejnych etapów uczenia maszynowego do rozpoznawania cyfr pisanych na podstawie bazy MNIST.</h2>
+
+        <!--<a href="https://github.com/pages-themes/cayman" class="btn">View on GitHub</a>-->
+        
+    </section>
+    <section class="main-content main-content-serif">
+        <div>
+    <h3>Spis treści</h3><ol class="toc"><li><a href="#Wstp">Wstęp</a></li><li><a href="#Wizualizacja">Wizualizacja</a></li><li><a href="#Skutecznodopasowania">Skuteczność dopasowania</a></li><li><a href="#Kodrdowygenerujcypliki">Kod źródłowy generujący pliki.</a></li></ol>
+<a id="Wstp"></a>
+<h3>Wstęp</h3>
+
+    <p>Poniższa wizualizacja ma na celu zaprezentowanie kolejnych iteracji w uczeniu maszynowym na zestawie pojedynczych cyfr pisanych odręcznie - <a nhref="http://yann.lecun.com/exdb/mnist/">baza MNIST</a>.</p>
+
+    <p>Kolejne iteracje (jest ich 1000 ale poniżej prezentowane są w skali logarytmicznej) to wynik przetworzenia 100 losowo pobranych cyfr i aktualizacji wag odpowiadających każdej z cyfr.</p>
+
+    <a id="Wizualizacja"></a>
+<h3>Wizualizacja</h3>
+
+    <div ng-controller="tfMnistHello as mnist">
+        
+        <div><span>Cyfra</span> <span ng-bind="mnist.num"></span></div>
+        <div>
+            <input type="range" min="0" max="9" style="width:100%"
+                 ng-change="mnist.changeNum()"
+                 ng-model="mnist.num"
+                >
+        </div>
+        <div class="not-so-big-parent">
+            <canvas class="not-so-big" id="canVisu" width="560" height="560" style="border:1px solid #d3d3d3;"></canvas>
+        </div>
+        <div><span>Numer iteracji</span> <span ng-bind="mnist.iter"></span> (skala logarytmiczna)</div>
+        <div>
+            <input type="range" min="1" max="{{mnist.maxVirtualIter}}" style="width:100%"
+                ng-change="mnist.changeVirtualIter()"
+                ng-model="mnist.virtualIter"
+                >
+        </div> 
+        <div><span>Skuteczność (wszystkich cyfr)</span> <span ng-bind="mnist.accuracy"></span></div>
+        <div>
+            <button ng-click="mnist.loopDigit()">Odtwarzanie w pętli - <span ng-bind="mnist.loopState"></span></button>
+        </div>
+
+    </div>
+
+    <a id="Skutecznodopasowania"></a>
+<h3>Skuteczność dopasowania</h3>
+
+    <p>Poniższy wykres w całości wizualizuje rozkład skuteczności względem iteracji. W tej sesji utrzymała się na poziomie <strong>0.9012</strong> (liczba oznacza prawdopodobieństwo rozpoznania właściwej cyfry).</p>
+
+    <image-info info="Skuteczność poprawnego dopasowania liczb (skala log.)" src="/img/topic/tensor-flow-mnist-wizualizacja/accuracy_log.png"></image-info>
+
+    <script type="text/javascript">
+        window.DI.registerController('tfMnistHello', ['$http', '$interval', function($http, $interval){
+
+            var ctx = document.getElementById("canVisu").getContext("2d");
+            var trueIterations = 1000;
+            var scale = 20;
+            var filesIndex = [1,1,1,1,1,1,2,2,2,2,3,3,3,4,4,4,5,6,6,7,8,9,9,11,12,13,14,16,18,20,22,24,27,29,33,36,40,44,49,54,60,66,73,81,90,99,109,121,134,148,164,181,200,221,244,270,298,330,365,403,445,492,544,601,665,735,812,897,992];
+
+            var self = this;
+
+            self.loopState = 'pauza';
+            self.loopPromise = undefined;
+            self.num = 0;
+            self.iter = 2;
+            self.accuracy = 0;
+            self.virtualIter = 0;
+            self.maxVirtualIter = filesIndex.length;// == (Math.floor(Math.log(trueIterations)*10.0)); // == 69
+
+            self.updateRealIter = function __updateRealIter() {
+                //self.iter = Math.max(1, Math.min(trueIterations, Math.round(Math.pow(Math.E,parseInt(self.virtualIter)/10.0))));
+                var pos = Math.max(1, Math.min(self.maxVirtualIter, self.virtualIter));
+                self.iter = filesIndex[pos-1];
+                return self.iter;
+            }
+
+            self.changeNum = function __changeNum() {
+                self.virtualIter = 0;
+                self.changeVirtualIter(true);
+            }
+
+            self.changeVirtualIter = function __changeVirtualIter(bForce) {
+                var oldIter = self.iter;
+                self.iter = self.updateRealIter();
+                if (bForce || oldIter !== self.iter)
+                    printIdx(self.num, self.iter);
+            }
+
+            self.loopDigit = function __loopDigit() {
+                if ('pauza' === self.loopState) {
+                    self.loopState = 'odtwarzanie';
+                    
+                    if (self.loopPromise) {
+                        $interval.cancel(self.loopPromise);
+                        self.loopPromise = undefined;
+                    }
+
+                    self.loopPromise = $interval(function _loop() {
+                        self.virtualIter += 1;
+                        if (self.virtualIter > self.maxVirtualIter)
+                            self.virtualIter = 1;
+
+                        self.changeVirtualIter();
+                    },125);
+                }
+                else {
+                    self.loopState = 'pauza';
+                    if (self.loopPromise) {
+                        $interval.cancel(self.loopPromise);
+                        self.loopPromise = undefined;
+                    }
+                }
+            }
+
+            function setClampToStyle(ctxCanv, vMax, vMin, val) {
+                if (vMax === vMin) {
+                    ctxCanv.fillStyle = 'rgb(0,0,0)';
+                    return;
+                }
+
+                var it = Math.round(((val-vMin)*510.0/(vMax-vMin))-255);
+                if (0 > it)
+                    ctxCanv.fillStyle = 'rgb('+(-it)+',0,0)';
+                else
+                    ctxCanv.fillStyle = 'rgb(0,'+(it)+',0)';
+            }
+
+            function clearImage() {
+                ctx.fillStyle = 'rgb(255,255,255)';
+                ctx.fillRect(0, 0, 28*scale, 28*scale);
+            }
+
+            function printIdx(num, idx) {
+                var url = '/data/tensor-flow-mnist-wizualizacja/dr' + num + '_' + idx + '.json';
+                $http.get(url).then(
+                    function _okGet(response) {
+
+                        if (200 === response.status && response.data && response.data.arr) {
+
+                            var dMax = response.data.max || 0;
+                            var dMin = response.data.min || 0;
+                            self.accuracy = Math.round(response.data.acc * 1000.0) / 1000.0;
+                            response.data.arr.forEach(function _fe(v,i){
+                                setClampToStyle(ctx, dMax, dMin,v);
+                                var x = i % 28;
+                                var y = Math.floor(i / 28);
+                                ctx.fillRect(x*scale ,y*scale ,scale ,scale );
+                            });
+                        }
+                    },
+                    function _errGet(response) {
+                        clearImage();
+                        console.error('image for NUMxITER not found', num, idx, response);
+                    });
+                /*
+                $.getJSON('tf_data/dr'+num+'_'+idx+'.json', function _ok(data) {
+                    
+                    ctx.fillStyle = 'rgb(255,255,255)';
+                    ctx.fillRect(0, 0, 28*scale, 28*scale);
+
+                    data.arr.forEach(function _fe(v,i){
+                        setClampToStyle(ctx,data.max,data.min,v);
+                        var x = i % 28;
+                        var y = Math.floor(i/28);
+                        ctx.fillRect(x*scale,y*scale,scale,scale);
+                    });
+                });
+                */
+            }
+
+            self.changeNum(0);
+        }]);
+    </script>
+
+    <a id="Kodrdowygenerujcypliki"></a>
+<h3>Kod źródłowy generujący pliki.</h3>
+
+    <pre><code class="hljs python"><span class="hljs-comment">#</span>
+<span class="hljs-comment"># Na podstawie https://www.tensorflow.org/versions/r1.2/get_started/mnist/beginners</span>
+<span class="hljs-comment">#</span>
+<span class="hljs-comment"># UWAGA: katalog ./app/tf_data/ musi istnieć już na dysku</span>
+<span class="hljs-comment">#</span>
+<span class="hljs-keyword">import</span> numpy <span class="hljs-keyword">as</span> np
+<span class="hljs-keyword">import</span> tensorflow <span class="hljs-keyword">as</span> tf
+<span class="hljs-keyword">from</span> tensorflow.examples.tutorials.mnist <span class="hljs-keyword">import</span> input_data
+mnist = input_data.read_data_sets(<span class="hljs-string">"MNIST_data/"</span>, one_hot=<span class="hljs-keyword">True</span>)
+
+<span class="hljs-comment"># 784 = 28*28</span>
+<span class="hljs-comment"># mnist.train.images = [55000, 784]</span>
+<span class="hljs-comment"># mnist.train.labels = [55000, 10]</span>
+
+<span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">writePass</span><span class="hljs-params">(sess, num, iter, accur)</span>:</span>
+    currW = sess.run([W])
+    row = [currW[<span class="hljs-number">0</span>][x][num] <span class="hljs-keyword">for</span> x <span class="hljs-keyword">in</span> range(<span class="hljs-number">784</span>)]
+    f = open(<span class="hljs-string">'./app/tf_data/dr'</span>+str(num)+<span class="hljs-string">'_'</span>+str(iter)+<span class="hljs-string">'.json'</span>,<span class="hljs-string">'w'</span>)
+    f.write(<span class="hljs-string">'{"max":'</span>+str(np.max(row))+<span class="hljs-string">',"min":'</span>+str(np.min(row))+<span class="hljs-string">',"acc":'</span>+str(accur)+<span class="hljs-string">',"arr":['</span> +<span class="hljs-string">','</span>.join([str(x) <span class="hljs-keyword">for</span> x <span class="hljs-keyword">in</span> row]) + <span class="hljs-string">']}'</span>)
+    f.close()
+
+x = tf.placeholder(tf.float32, [<span class="hljs-keyword">None</span>, <span class="hljs-number">784</span>], name=<span class="hljs-string">'x'</span>)
+W = tf.Variable(tf.zeros([<span class="hljs-number">784</span>, <span class="hljs-number">10</span>]), name=<span class="hljs-string">'W'</span>)
+b = tf.Variable(tf.zeros([<span class="hljs-number">10</span>]), name=<span class="hljs-string">'b'</span>)
+y = tf.nn.softmax(tf.matmul(x, W) + b, name=<span class="hljs-string">'y'</span>)
+
+y_ = tf.placeholder(tf.float32, [<span class="hljs-keyword">None</span>, <span class="hljs-number">10</span>], name=<span class="hljs-string">'y_'</span>)
+cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_ * tf.log(y), reduction_indices=[<span class="hljs-number">1</span>]))
+train_step = tf.train.GradientDescentOptimizer(<span class="hljs-number">0.05</span>).minimize(cross_entropy)
+
+correct_prediction = tf.equal(tf.argmax(y,<span class="hljs-number">1</span>), tf.argmax(y_,<span class="hljs-number">1</span>))
+accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
+<span class="hljs-keyword">with</span> tf.Session() <span class="hljs-keyword">as</span> sess:
+    sess.run(tf.global_variables_initializer())
+
+    <span class="hljs-keyword">for</span> nn <span class="hljs-keyword">in</span> range(<span class="hljs-number">10</span>):
+        writePass(sess,nn,<span class="hljs-number">0</span>,<span class="hljs-number">0</span>)
+    
+    <span class="hljs-keyword">for</span> _ <span class="hljs-keyword">in</span> range(<span class="hljs-number">1000</span>):
+        batch_xs, batch_ys = mnist.train.next_batch(<span class="hljs-number">100</span>)
+        sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys})
+        
+        ac = sess.run(accuracy, feed_dict={x: mnist.test.images, y_: mnist.test.labels})
+        <span class="hljs-keyword">for</span> nn <span class="hljs-keyword">in</span> range(<span class="hljs-number">10</span>):
+            writePass(sess,nn,_+<span class="hljs-number">1</span>,ac)
+
+    print()
+    print(sess.run(accuracy, feed_dict={x: mnist.test.images, y_: mnist.test.labels}))</code></pre>
+
+    <pre><code class="hljs bash">\&gt; python .\mnist_draw.py
+Extracting MNIST_data/train-images-idx3-ubyte.gz
+Extracting MNIST_data/train-labels-idx1-ubyte.gz
+Extracting MNIST_data/t10k-images-idx3-ubyte.gz
+Extracting MNIST_data/t10k-labels-idx1-ubyte.gz
+
+0.9012</code></pre>
+</div>
+    </section>
+</body>
+</html>

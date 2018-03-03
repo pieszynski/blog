@@ -128,3 +128,7 @@ ol.toc-sub1 > li:before {
     font-family: "Helvetica Neue", Arial, sans-serif;
     vertical-align: top;
 }
+
+
+@media screen and (max-width: 42em) { .not-so-big-parent { } .not-so-big { width: 100%; } }
+@media screen and (min-width: 42em) { .not-so-big-parent { text-align: center; } .not-so-big { width: 100%; max-width: 60%; } }
