@@ -17,6 +17,12 @@
     },
     "pages" : [
         {
+            "name" : "tensor-flow-mnist-wizualizacja",
+            "title" : "TensorFlow, MNIST; wizualizacja",
+            "description" : "Wizualizacja kolejnych etapów uczenia maszynowego do rozpoznawania cyfr pisanych na podstawie bazy MNIST.",
+            "date" : "2018-03-03"
+        },
+        {
             "name" : "certyfikaty-ssl-lets-encrypt-z-pomoca-azure",
             "title" : "Certyfikaty SSL Let's Encrypt z pomocą Azure",
             "description" : "W jaki sposób ułatwić sobie proces tworzenia i aktualizacji certyfikatów trzymiesięcznych z platformy Let's Encrypt.",
