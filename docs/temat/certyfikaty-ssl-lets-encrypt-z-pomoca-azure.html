@@ -261,6 +261,15 @@ Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=<span class="hljs-literal">false</spa
 [Install]
 WantedBy=multi-user.target</code></pre>
 
+    <p>Uruchomienie i sprawdzanie za pomocą poniższych poleceń.</p>
+
+    <pre><code class="hljs bash"><span class="hljs-comment"># jednorazowo, aktywacja usługi</span>
+\&gt; systemctl <span class="hljs-built_in">enable</span> kestrel-letssl.service
+
+<span class="hljs-comment"># start i sprawdzenie statusu</span>
+\&gt; systemctl start kestrel-letssl.service
+\&gt; systemctl status kestrel-letssl.service</code></pre>
+
     <a id="appsettingsjsonstronaWWW"></a>
 <h4>appsettings.json (strona WWW)</h4>
 

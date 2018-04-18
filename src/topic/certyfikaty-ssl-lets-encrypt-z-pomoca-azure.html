@@ -215,6 +215,17 @@ Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
 WantedBy=multi-user.target
     #%%%
 
+    <p>Uruchomienie i sprawdzanie za pomocą poniższych poleceń.</p>
+
+    %%%#code_bash^
+# jednorazowo, aktywacja usługi
+\> systemctl enable kestrel-letssl.service
+
+# start i sprawdzenie statusu
+\> systemctl start kestrel-letssl.service
+\> systemctl status kestrel-letssl.service
+    #%%%
+
     <h4>appsettings.json (strona WWW)</h4>
 
     %%%#code_json^{
